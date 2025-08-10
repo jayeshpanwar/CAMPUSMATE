@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronDown } from "lucide-react"; // Optional: use heroicons or lucide-react
+import { ChevronDown } from "lucide-react";
 
 const RoleDropdown = () => {
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,35 +25,48 @@ const RoleDropdown = () => {
     navigate(path);
   };
 
-  return (
-    <div className="relative w-fit text-left z-50">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 font-semibold text-lg px-4 py-2 bg-white rounded-full shadow hover:bg-gray-100 transition"
-      >
-        {currentRole}
-        <ChevronDown className="w-5 h-5" />
-      </button>
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
-      {open && (
-        <div
-          className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 animate-dropdown"
+  return (
+    <div className="fixed top-4 right-4 z-50 font-poppins" ref={dropdownRef}>
+      <div className="relative w-fit text-left">
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center gap-1 text-gray-800 text-base font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100 transition"
         >
-          <div className="py-1">
+          {currentRole}
+          <ChevronDown className="w-4 h-4" />
+        </button>
+
+        {open && (
+          <div className="absolute right-0 mt-1 w-32 rounded-md shadow-sm bg-white border border-gray-200 animate-fadeInUp">
             {roles.map((role) => (
               <button
                 key={role.name}
                 onClick={() => handleSelect(role.path)}
-                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                  currentRole === role.name ? "font-bold" : ""
+                className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 transition ${
+                  currentRole === role.name
+                    ? "font-semibold text-blue-600"
+                    : "text-gray-700"
                 }`}
               >
                 {role.name}
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
