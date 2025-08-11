@@ -2,62 +2,191 @@ import { useEffect, useState } from "react";
 
 function AdminSignup({ onSwitch }) {
   const [animate, setAnimate] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  useEffect(() => setAnimate(true), []);
+  useEffect(() => {
+    setAnimate(true);
+  }, []);
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 sm:px-10 py-8 gap-12 md:gap-20 bg-white font-poppins">
+    <div className="relative flex min-h-screen items-center justify-center font-poppins bg-white overflow-hidden px-6">
       
-      {/* Left Illustration */}
-      <img
-        src="/AdminSignup.png"
-        alt="Admin Signup Illustration"
-        className={`w-60 sm:w-80 md:w-[28rem] h-auto object-contain transition-all duration-700 ease-out 
-          ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}
-      />
+      {/* Left Image */}
+      <div className="flex-1 flex items-center justify-center">
+        <img
+          src="/class.png"
+          alt="Admin Signup Illustration"
+          className={`w-64 sm:w-80 md:w-[28rem] h-auto object-contain transition-all duration-700 ease-out select-none ${
+            animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"
+          }`}
+          draggable={false}
+          style={{ border: "none", outline: "none", boxShadow: "none", backgroundColor: "transparent" }}
+        />
+      </div>
 
       {/* Right Form */}
-      <div
-        className={`w-full max-w-md space-y-6 transition-all duration-700 ease-out 
-          ${animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"}`}
-      >
-        <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900">
-          Create Admin Account
-        </h1>
+      <div className="flex-1 flex items-center justify-center">
+        <div
+          className={`w-full max-w-md bg-white z-20 space-y-6 px-6 py-8 rounded-2xl shadow-lg transition-all duration-700 ease-out ${
+            animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
+          }`}
+          style={{ border: "none", boxShadow: "none", outline: "none" }}
+        >
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">
+            Create Admin Account
+          </h1>
 
-        <input
-          type="text"
-          placeholder="Full Name"
-          className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none text-sm"
-        />
-        <input
-          type="email"
-          placeholder="Admin Email ID"
-          className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none text-sm"
-        />
-        <input
-          type="password"
-          placeholder="Create Password"
-          className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none text-sm"
-        />
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none text-sm"
-        />
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Full Name"
+              className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
+              style={{ border: "none" }}
+            />
+            <input
+              type="email"
+              placeholder="Admin Email ID"
+              className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
+              style={{ border: "none" }}
+            />
 
-        <button className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg text-sm font-medium transition">
-          Sign Up
-        </button>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Create Password"
+                className="w-full px-4 py-3 pr-10 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
+                style={{ border: "none" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.956 9.956 0 012.37-4.394m1.698-1.698A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.965 9.965 0 01-4.16 5.12M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 3l18 18"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
 
-        <div className="text-center text-sm text-gray-500">
-          Already have an account?{" "}
-          <button
-            onClick={onSwitch}
-            className="text-gray-900 font-medium hover:underline"
-          >
-            Sign In
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                className="w-full px-4 py-3 pr-10 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
+                style={{ border: "none" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none"
+                aria-label="Toggle confirm password visibility"
+              >
+                {showConfirmPassword ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.956 9.956 0 012.37-4.394m1.698-1.698A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.965 9.965 0 01-4.16 5.12M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 3l18 18"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <button className="w-full bg-[#4F6EF7] hover:bg-[#3D57D9] text-white py-3 rounded-xl text-lg font-semibold transition border-none">
+            Sign Up
           </button>
+
+          <div
+            className="text-center text-sm text-gray-700"
+            style={{ border: "none", boxShadow: "none", outline: "none" }}
+          >
+            Already have an account?{" "}
+            <span
+              onClick={onSwitch}
+              className="font-semibold text-gray-500 cursor-pointer hover:underline"
+              style={{ border: "none", boxShadow: "none", outline: "none" }}
+            >
+              Sign In
+            </span>
+          </div>
         </div>
       </div>
     </div>

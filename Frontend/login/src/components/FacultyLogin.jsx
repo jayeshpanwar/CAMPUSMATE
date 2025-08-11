@@ -14,7 +14,7 @@ function FacultyLogin({ onSwitch }) {
       {/* Left Image */}
       <div className="flex-1 flex items-center justify-center">
         <img
-          src="/Faculty.png"
+          src="/class.png"
           alt="Faculty Illustration"
           className={`w-64 sm:w-80 md:w-[28rem] h-auto object-contain transition-all duration-700 ease-out select-none ${
             animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import myImage from "/public/Student.png"; // Place your image in src/assets/
+import myImage from "/public/Students.png"; // Place your image in src/assets/
 
 function StudentSignup({ onSwitch }) {
   const [animate, setAnimate] = useState(false);
@@ -13,7 +13,7 @@ function StudentSignup({ onSwitch }) {
       
       {/* Left-side Image */}
       <img
-        src="/Student.png"
+        src="/Students.png"
         alt="Student Signup"
         className={`w-60 sm:w-80 md:w-[28rem] h-auto object-cover rounded-2xl transition-all duration-700 ease-out 
           ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}
