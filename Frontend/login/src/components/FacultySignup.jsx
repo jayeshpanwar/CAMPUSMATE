@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react"; // custom icons
 
 function FacultySignup({ onSwitch }) {
   const [animate, setAnimate] = useState(false);
+
+  // Password states
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     setAnimate(true);
@@ -51,19 +58,49 @@ function FacultySignup({ onSwitch }) {
               className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
             />
 
-            {/* Password */}
-            <input
-              type="password"
-              placeholder="Create Password"
-              className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
-            />
+            {/* Password with toggle */}
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Create Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-12 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] 
+                  focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none
+                  [&::-ms-reveal]:hidden [&::-ms-clear]:hidden 
+                  [&::-webkit-credentials-auto-fill-button]:hidden [&::-webkit-clear-button]:hidden 
+                  [&::-webkit-password-toggle-button]:hidden"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-4 flex items-center text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
 
-            {/* Confirm Password */}
-            <input
-              type="password"
-              placeholder="Confirm Password"
-              className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
-            />
+            {/* Confirm Password with toggle */}
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-12 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] 
+                  focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none
+                  [&::-ms-reveal]:hidden [&::-ms-clear]:hidden 
+                  [&::-webkit-credentials-auto-fill-button]:hidden [&::-webkit-clear-button]:hidden 
+                  [&::-webkit-password-toggle-button]:hidden"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-4 flex items-center text-gray-500 hover:text-gray-700"
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           {/* Sign Up */}
