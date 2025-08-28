@@ -1,112 +1,91 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import myImage from "/public/Faculty.png";
 
 function FacultyLogin({ onSwitch }) {
   const [animate, setAnimate] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [role, setRole] = useState("faculty");
+  const navigate = useNavigate();
 
   useEffect(() => {
     setAnimate(true);
   }, []);
 
+  const handleRoleChange = (e) => {
+    const selectedRole = e.target.value;
+    setRole(selectedRole);
+
+    if (selectedRole === "student") navigate("/student/login");
+    else if (selectedRole === "faculty") navigate("/faculty/login");
+    else if (selectedRole === "admin") navigate("/admin/login");
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert("Faculty Login Successful");
+  };
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center font-poppins bg-white overflow-hidden px-6">
-      
-      {/* Left Image */}
-      <div className="flex-1 flex items-center justify-center">
-        <img
-          src="/class.png"
-          alt="Faculty Illustration"
-          className={`w-64 sm:w-80 md:w-[28rem] h-auto object-contain transition-all duration-700 ease-out select-none ${
-            animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"
-          }`}
-          draggable={false}
-          style={{ border: "none", outline: "none", boxShadow: "none", backgroundColor: "transparent" }}
-        />
-      </div>
+    <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 sm:px-10 py-8 gap-12 md:gap-20 bg-white font-poppins">
+      <img
+        src={myImage}
+        alt="Faculty Login"
+        className={`w-60 sm:w-80 md:w-[28rem] h-auto object-cover rounded-2xl transition-all duration-700 ease-out
+        ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}
+        style={{ display: "block" }}
+      />
 
-      {/* Right Form */}
-      <div className="flex-1 flex items-center justify-center">
-        <div
-          className={`w-full max-w-md bg-white z-20 space-y-6 px-6 py-8 rounded-2xl shadow-lg transition-all duration-700 ease-out ${
-            animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
-          }`}
-          style={{ border: "none", boxShadow: "none", outline: "none" }}
+      <form
+        onSubmit={handleSubmit}
+        className={`w-full max-w-md space-y-6 transition-all duration-700 ease-out
+        ${animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"}`}
+      >
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Faculty Login</h1>
+
+        <select
+          value={role}
+          onChange={handleRoleChange}
+          className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 border-none focus:outline-none focus:ring-2 focus:ring-[#cdd8ff]"
         >
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Welcome Back, Faculty!</h1>
+          <option value="student">Student</option>
+          <option value="faculty">Faculty</option>
+          <option value="admin">Admin</option>
+        </select>
 
-          <div className="space-y-4">
-            {/* Email Input */}
-            <input
-              type="email"
-              placeholder="Enter your faculty email id"
-              className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
-              style={{ border: "none" }}
-            />
+        <input
+          type="email"
+          placeholder="College Email ID"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff]"
+        />
 
-            {/* Password Input */}
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Your Password..."
-                className="w-full px-4 py-3 pr-10 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
-                style={{ border: "none" }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none"
-                aria-label="Toggle password visibility"
-              >
-                {showPassword ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.956 9.956 0 012.37-4.394m1.698-1.698A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.965 9.965 0 01-4.16 5.12M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
+        <input
+          type="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff]"
+        />
 
-          <div className="text-right text-sm text-gray-500 cursor-pointer hover:text-gray-700">
-            Forgot Password?
-          </div>
+        <button
+          type="submit"
+          className="w-full bg-[#4F6EF7] hover:bg-[#3D57D9] text-white py-3 rounded-xl text-lg font-semibold transition"
+        >
+          Login
+        </button>
 
-          <button className="w-full bg-[#4F6EF7] hover:bg-[#3D57D9] text-white py-3 rounded-xl text-lg font-semibold transition border-none">
-            Sign In
-          </button>
-
-          <div
-            className="text-center text-sm text-gray-700"
-            style={{ border: "none", boxShadow: "none", outline: "none" }}
+        <div className="text-center text-sm text-gray-700">
+          Don’t have an account?{" "}
+          <span
+            onClick={onSwitch}
+            className="font-semibold text-gray-500 cursor-pointer hover:underline"
           >
-            No account yet?{" "}
-            <span
-              onClick={() => onSwitch("facultySignup")}
-              className="font-semibold text-gray-500 cursor-pointer hover:underline"
-              style={{ border: "none", boxShadow: "none", outline: "none" }}
-            >
-              Sign Up
-            </span>
-          </div>
+            Sign Up
+          </span>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
