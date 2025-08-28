@@ -84,8 +84,9 @@ REST_FRAMEWORK = {
 }
 
 # Configure Simple JWT settings
+# campusmate_backend/settings.py
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5), # <-- Only lasts 5 minutes
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 

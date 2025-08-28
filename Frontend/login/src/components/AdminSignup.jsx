@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// ✅ 1. Import the correct function for admin registration
-import { registerAdmin } from "./api"; 
+// ✅ 1. Import or define the path to your admin image
+import adminImage from "/public/Admin.png"; 
+import { registerAdmin } from "./api";
 
 function AdminSignup({ onSwitch }) {
   const navigate = useNavigate();
+  // ✅ 2. Add the animate state back
   const [animate, setAnimate] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -15,6 +17,7 @@ function AdminSignup({ onSwitch }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // ✅ 3. Add the useEffect to trigger the animation
   useEffect(() => {
     setAnimate(true);
   }, []);
@@ -34,10 +37,9 @@ function AdminSignup({ onSwitch }) {
     };
 
     try {
-      // ✅ 2. Call the correct API function
       await registerAdmin(userData);
       alert("Admin account created successfully! Please proceed to login.");
-      navigate("/admin/login"); // Or a general login page
+      navigate("/admin/login");
     } catch (err) {
       if (err.response && err.response.data) {
         const errorData = err.response.data;
@@ -53,10 +55,18 @@ function AdminSignup({ onSwitch }) {
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 sm:px-10 py-8 gap-12 md:gap-20 bg-white font-poppins">
-      {/* Form */}
+      {/* ✅ 4. Add the <img> tag back with animation classes */}
+      <img
+        src={adminImage}
+        alt="Admin Signup"
+        className={`w-60 sm:w-80 md:w-[28rem] h-auto object-cover rounded-2xl transition-all duration-700 ease-out 
+        ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}
+      />
+
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md space-y-6"
+        className={`w-full max-w-md space-y-6 transition-all duration-700 ease-out 
+        ${animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"}`}
       >
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
           Create Admin Account

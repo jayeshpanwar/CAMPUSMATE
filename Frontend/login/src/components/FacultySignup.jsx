@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// ✅ 1. Import the correct function for faculty registration
-import { registerFaculty } from "./api"; 
+// ✅ 1. Import or define the path to your faculty image
+import facultyImage from "/public/Faculty.png"; 
+import { registerFaculty } from "./api";
 
 function FacultySignup({ onSwitch }) {
   const navigate = useNavigate();
+  // ✅ 2. Add the animate state
   const [animate, setAnimate] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
-    department: "", // Added department field
+    department: "",
     password: "",
     confirmPassword: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // ✅ 3. Add useEffect to trigger the animation
   useEffect(() => {
     setAnimate(true);
   }, []);
@@ -30,16 +33,15 @@ function FacultySignup({ onSwitch }) {
       first_name: nameParts[0],
       last_name: nameParts.slice(1).join(" ") || "",
       email: formData.email,
-      department: formData.department, // Include department in the data
+      department: formData.department,
       password: formData.password,
       password2: formData.confirmPassword,
     };
 
     try {
-      // ✅ 2. Call the correct API function
       await registerFaculty(userData);
       alert("Faculty signup successful! Please proceed to login.");
-      navigate("/faculty/login"); // Or a general login page
+      navigate("/faculty/login");
     } catch (err) {
       if (err.response && err.response.data) {
         const errorData = err.response.data;
@@ -55,10 +57,18 @@ function FacultySignup({ onSwitch }) {
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 sm:px-10 py-8 gap-12 md:gap-20 bg-white font-poppins">
-      {/* Form */}
+      {/* ✅ 4. Add the <img> tag back with animation classes */}
+      <img
+        src={facultyImage}
+        alt="Faculty Signup"
+        className={`w-60 sm:w-80 md:w-[28rem] h-auto object-cover rounded-2xl transition-all duration-700 ease-out 
+        ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}
+      />
+
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md space-y-6"
+        className={`w-full max-w-md space-y-6 transition-all duration-700 ease-out 
+        ${animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"}`}
       >
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
           Create Faculty Account

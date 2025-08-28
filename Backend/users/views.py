@@ -1,6 +1,4 @@
-# users/views.py
-
-from rest_framework import generics
+from rest_framework import generics, permissions # ✅ 1. Make sure permissions is imported
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -18,19 +16,24 @@ from .serializers import (
 class StudentRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = StudentRegisterSerializer
+    permission_classes = [permissions.AllowAny] # ✅ 2. Add this line
 
 class FacultyRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = FacultyRegisterSerializer
+    permission_classes = [permissions.AllowAny] # ✅ 2. Add this line
 
 class AdminRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = AdminRegisterSerializer
+    permission_classes = [permissions.AllowAny] # ✅ 2. Add this line
 
-# --- Protected Data Views ---
+# --- Protected Data Views (These remain unchanged) ---
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
+    # ... (rest of the view)
+
 
     def get(self, request):
         serializer = UserSerializer(request.user)
