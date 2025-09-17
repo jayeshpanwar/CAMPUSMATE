@@ -1,0 +1,109 @@
+Here is a complete setup guide for your frontend developer to run the Django backend on their system.
+
+You can copy and paste this entire response to them.
+
+-----
+
+## Backend Setup Guide 🐍
+
+This guide provides all the necessary steps to install, configure, and run the Django backend for the CAMPUSMATE project.
+
+### \#\# Prerequisites
+
+Before you begin, make sure you have the following software installed on your system:
+
+  * **Python** (version 3.8 or higher)
+  * **Pip** (Python's package installer, usually comes with Python)
+  * **Git** (for cloning the repository)
+
+-----
+
+### \#\# Setup Instructions
+
+Follow these commands in your terminal.
+
+1.  **Clone the Repository**
+    If you haven't already, clone the project from GitHub.
+
+    ```bash
+    git clone <repository_url>
+    cd CAMPUSMATE/Backend
+    ```
+
+2.  **Create and Activate a Virtual Environment**
+    This creates an isolated space for the project's Python packages.
+
+    ```bash
+    # Create the environment
+    python -m venv venv
+
+    # Activate it (command differs by OS)
+    # On Windows:
+    venv\Scripts\activate
+    # On macOS/Linux:
+    source venv/bin/activate
+    ```
+
+    You'll know it's active when you see `(venv)` at the beginning of your terminal prompt.
+
+3.  **Install Required Packages**
+    This command reads the `requirements.txt` file and installs Django, Django REST Framework, and all other necessary packages.
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Set Up the Database**
+    This command will create your local `db.sqlite3` database file and set up all the necessary tables.
+
+    ```bash
+    python manage.py migrate
+    ```
+
+5.  **Create a Superuser (Optional)**
+    To access the Django Admin Panel and manage data, you'll need an admin account.
+
+    ```bash
+    python manage.py createsuperuser
+    ```
+
+    Follow the prompts to create your username, email, and password.
+
+6.  **Run the Backend Server**
+    You're all set\! Run this command to start the backend.
+
+    ```bash
+    python manage.py runserver
+    ```
+
+    The Django server is now running and accessible at **`http://127.0.0.1:8000`**.
+
+-----
+
+### \#\# Key API Endpoints
+
+Here are the main API endpoints you'll need to connect to from the frontend. The base URL is `http://127.0.0.1:8000/api`.
+
+  * **Login (for all roles):**
+
+      * **URL:** `/login/`
+      * **Method:** `POST`
+      * **Body:** `{ "email": "user@example.com", "password": "yourpassword" }`
+
+  * **Student Signup:**
+
+      * **URL:** `/register/student/`
+      * **Method:** `POST`
+      * **Body:** `{ "first_name": "...", "last_name": "...", "email": "...", "password": "...", "password2": "..." }`
+
+  * **Faculty Signup:**
+
+      * **URL:** `/register/faculty/`
+      * **Method:** `POST`
+      * **Body:** `{ "first_name": "...", "last_name": "...", "email": "...", "department": "...", "password": "...", "password2": "..." }`
+
+  * **Get User Profile (Protected):**
+
+      * **URL:** `/profile/`
+      * **Method:** `GET`
+      * **Headers:** Requires `Authorization: Bearer <accessToken>`
