@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
 
-function StudentLogin({ onSwitch }) {
+// Accept the onLogin prop from App.jsx
+function StudentLogin({ onSwitch, onLogin }) {
   const [animate, setAnimate] = useState(false);
-
   useEffect(() => {
     setAnimate(true);
   }, []);
+
+  // Function to handle the sign-in process
+  const handleSignIn = () => {
+    // ⚠️ Add your authentication logic here first (e.g., validate email/password)
+    // If authentication is successful, call the onLogin prop
+    onLogin();
+  };
 
   return (
     <div className="relative flex flex-col md:flex-row min-h-screen items-center justify-center font-poppins bg-white overflow-hidden px-6">
       {/* Left Image */}
       <div
-        className={`flex-1 flex items-center justify-center transition-all duration-700 ease-out ${
-          animate
+        className={`flex-1 flex items-center justify-center transition-all duration-700 ease-out ${animate
             ? "opacity-100 translate-x-0 scale-100"
             : "opacity-0 -translate-x-6 scale-95"
-        }`}
+          }`}
       >
         <img
           src="/Students.png"
@@ -27,9 +33,8 @@ function StudentLogin({ onSwitch }) {
 
       {/* Right Form */}
       <div
-        className={`flex-1 flex items-center justify-center transition-all duration-700 ease-out ${
-          animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
-        }`}
+        className={`flex-1 flex items-center justify-center transition-all duration-700 ease-out ${animate ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
+          }`}
       >
         <div className="w-full max-w-md bg-white space-y-6 px-6 py-8 rounded-2xl shadow-lg">
           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 text-center md:text-left">
@@ -58,7 +63,10 @@ function StudentLogin({ onSwitch }) {
           </div>
 
           {/* Sign in */}
-          <button className="w-full bg-[#4F6EF7] hover:bg-[#3D57D9] text-white py-3 rounded-xl text-lg font-semibold transition border-none">
+          <button
+            className="w-full bg-[#4F6EF7] hover:bg-[#3D57D9] text-white py-3 rounded-xl text-lg font-semibold transition border-none"
+            onClick={handleSignIn} // Call handleSignIn on click
+          >
             Sign In
           </button>
 

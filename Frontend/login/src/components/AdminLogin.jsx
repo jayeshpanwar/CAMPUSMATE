@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function AdminLogin({ onSwitch }) {
   const [animate, setAnimate] = useState(false);
+   const navigate = useNavigate();
 
   useEffect(() => {
     setAnimate(true);
@@ -59,7 +61,10 @@ function AdminLogin({ onSwitch }) {
           </div>
 
           {/* Sign in */}
-          <button className="w-full bg-[#4F6EF7] hover:bg-[#3D57D9] text-white py-3 rounded-xl text-lg font-semibold transition border-none">
+          <button
+            onClick={handleSignIn} // ✅ attached navigation
+            className="w-full bg-[#4F6EF7] hover:bg-[#3D57D9] text-white py-3 rounded-xl text-lg font-semibold transition border-none"
+          >
             Sign In
           </button>
 
