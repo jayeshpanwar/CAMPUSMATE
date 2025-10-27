@@ -1,15 +1,13 @@
 import axios from 'axios';
 
-// Create an axios instance with the correct base URL for your Django API
 const apiClient = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: 'http://127.0.0.1:8000/api/',
+  timeout: 5000,
 });
 
-// This "interceptor" automatically attaches your login token to every
-// request you make to the backend after you've logged in.
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,33 +21,33 @@ apiClient.interceptors.request.use(
 
 // --- AUTHENTICATION CALLS ---
 
-// Handles login for all roles (student, faculty, admin)
-// Expects an object like { email: "...", password: "..." }
 export const loginUser = (credentials) => {
-  return apiClient.post('/login/', credentials);
+  return apiClient.post('login/', credentials);
 };
 
-// --- REGISTRATION CALLS ---
+// --- REGISTRATION CALLS (DEFINITIVE FIX) ---
+// These functions now target the exact paths defined in your Django urls.py.
 
-// Handles student signup
+// Calls /api/register/student/
 export const registerStudent = (userData) => {
-  return apiClient.post('/register/student/', userData);
+  return apiClient.post('register/student/', userData); 
 };
 
-// Handles faculty signup
+// Calls /api/register/faculty/
 export const registerFaculty = (userData) => {
-  return apiClient.post('/register/faculty/', userData);
+  return apiClient.post('register/faculty/', userData);
 };
 
-// Handles admin signup
+// Calls /api/register/admin/
 export const registerAdmin = (userData) => {
-  return apiClient.post('/register/admin/', userData);
+  return apiClient.post('register/admin/', userData);
 };
 
 
 // --- PROTECTED DATA CALLS ---
 
-// Fetches the profile of the currently logged-in user
 export const getProfile = () => {
-    return apiClient.get('/profile/');
+    return apiClient.get('profile/');
 };
+
+export default apiClient;

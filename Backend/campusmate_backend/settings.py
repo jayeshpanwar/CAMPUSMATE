@@ -24,6 +24,9 @@ INSTALLED_APPS = [
     # ✅ This line MUST be here
     'users.apps.UsersConfig', 
     'testapp',
+    'chat',
+    'notices',
+    
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
