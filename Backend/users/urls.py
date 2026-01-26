@@ -2,25 +2,30 @@
 
 from django.urls import path
 from .views import (
-    StudentRegisterView,
     FacultyRegisterView,
     AdminRegisterView,
     ProfileView,
     StudentOnlyView,
     FacultyOnlyView,
-    AdminOnlyView
+    AdminOnlyView,
+    CustomLoginView,
+    StudentVerificationInitiateView,
+    StudentVerificationConfirmView,
 )
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     # --- Registration URLs ---
-    path('register/student/', StudentRegisterView.as_view(), name='register-student'),
     path('register/faculty/', FacultyRegisterView.as_view(), name='register-faculty'),
     path('register/admin/', AdminRegisterView.as_view(), name='register-admin'),
 
     # --- Login/Auth URLs ---
-    path('login/', TokenObtainPairView.as_view(), name='login'),
+    path('login/', CustomLoginView.as_view(), name='login'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # --- Verification URLs ---
+    path('verify/student/initiate/', StudentVerificationInitiateView.as_view(), name='student-verify-initiate'),
+    path('verify/student/confirm/', StudentVerificationConfirmView.as_view(), name='student-verify-confirm'),
     
     # --- Protected Data URLs ---
     path('profile/', ProfileView.as_view(), name='profile'),

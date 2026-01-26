@@ -25,14 +25,6 @@ export const loginUser = (credentials) => {
   return apiClient.post('login/', credentials);
 };
 
-// --- REGISTRATION CALLS (DEFINITIVE FIX) ---
-// These functions now target the exact paths defined in your Django urls.py.
-
-// Calls /api/register/student/
-export const registerStudent = (userData) => {
-  return apiClient.post('register/student/', userData); 
-};
-
 // Calls /api/register/faculty/
 export const registerFaculty = (userData) => {
   return apiClient.post('register/faculty/', userData);
@@ -41,6 +33,16 @@ export const registerFaculty = (userData) => {
 // Calls /api/register/admin/
 export const registerAdmin = (userData) => {
   return apiClient.post('register/admin/', userData);
+};
+
+// --- VERIFICATION CALLS ---
+
+export const initiateStudentVerification = (payload) => {
+  return apiClient.post('verify/student/initiate/', payload);
+};
+
+export const confirmStudentVerification = (payload) => {
+  return apiClient.post('verify/student/confirm/', payload);
 };
 
 

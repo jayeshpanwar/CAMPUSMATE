@@ -11,6 +11,7 @@ import FacultySignup from './components/FacultySignup';
 import AdminLogin from './components/AdminLogin';
 import AdminSignup from './components/AdminSignup';
 import Dashboard from './components/Dashboard';
+import TeacherDashboard from './components/TeacherDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -30,10 +31,10 @@ function AppRoutes() {
       {/* Student Routes */}
       <Route 
         path="/student/login" 
-        element={<StudentLogin onSwitch={() => navigate('/student/signup')} />} 
+        element={<StudentLogin onSwitch={() => navigate('/student/verify')} />} 
       />
       <Route 
-        path="/student/signup" 
+        path="/student/verify" 
         element={<StudentSignup onSwitch={() => navigate('/student/login')} />} 
       />
 
@@ -63,6 +64,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/faculty/dashboard"
+        element={
+          <ProtectedRoute redirectTo="/faculty/login">
+            <TeacherDashboard />
           </ProtectedRoute>
         }
       />

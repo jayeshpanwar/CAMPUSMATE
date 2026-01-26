@@ -6,7 +6,7 @@ import api from './api.js';
 
 function StudentLogin({ onSwitch }) {
     const [animate, setAnimate] = useState(false);
-    const [formData, setFormData] = useState({ username: "", password: "" });
+    const [formData, setFormData] = useState({ email: "", password: "" });
     const [role, setRole] = useState("student");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -32,18 +32,18 @@ function StudentLogin({ onSwitch }) {
       setError("");
       setLoading(true);
 
-      const usernameInput = formData.username.trim(); // Still collect from the input field
+      const emailInput = formData.email.trim();
       const passwordInput = formData.password.trim();
 
-      if (!usernameInput || !passwordInput) {
-          setError("Username/Email and password are required.");
+      if (!emailInput || !passwordInput) {
+          setError("Email and password are required.");
           setLoading(false);
           return;
       }
 
       // --- CRITICAL FIX: Change the key name ---
       const loginData = {
-          email: usernameInput, // Send the input value using the 'email' key
+          email: emailInput,
           password: passwordInput,
       };
       // ----------------------------------------
@@ -54,8 +54,15 @@ function StudentLogin({ onSwitch }) {
           // This POST request now sends {email: ..., password: ...}
           const response = await api.post('login/', loginData); 
           
+          // store tokens with consistent names
           localStorage.setItem('access_token', response.data.access);
           localStorage.setItem('refresh_token', response.data.refresh);
+          
+          // store basic user info so the dashboard can render it immediately
+          localStorage.setItem('user_name', response.data.first_name || emailInput);
+          localStorage.setItem('user_email', response.data.email || emailInput);
+          localStorage.setItem('user_role', response.data.role || 'student');
+          localStorage.setItem('user_id', String(response.data.user_id || ''));
           
           console.log("Login successful! Tokens received.");
           
@@ -66,7 +73,9 @@ function StudentLogin({ onSwitch }) {
           let errorMsg = "Login failed. Check server connection or try again.";
           if (err.response) {
                if (err.response.status === 401) { 
-                   errorMsg = "Invalid email or password. Please check your credentials."; // Updated message for 401
+                   errorMsg = "Invalid email or password. Please check your credentials.";
+               } else if (err.response.status === 403 && err.response.data) {
+                   errorMsg = err.response.data.error || "Account requires verification before login.";
                } else if (err.response.status === 400 && err.response.data) {
                    const responseData = err.response.data;
                    // Display specific errors if Django sends them back
@@ -130,10 +139,10 @@ function StudentLogin({ onSwitch }) {
                 </select>
 
                 <input
-                    type="text"
-                    placeholder="Username or Email ID"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    type="email"
+                    placeholder="Institutional Email ID"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
                     required
                     disabled={loading}
@@ -158,12 +167,12 @@ function StudentLogin({ onSwitch }) {
                 </button>
 
                 <div className="text-center text-sm text-gray-700 border-none">
-                    Don’t have an account?{" "}
+                    First time here?{" "}
                     <span
                         onClick={onSwitch}
                         className="font-semibold text-gray-500 cursor-pointer hover:underline"
                     >
-                        Sign Up
+                        Verify your account
                     </span>
                 </div>
             </form>

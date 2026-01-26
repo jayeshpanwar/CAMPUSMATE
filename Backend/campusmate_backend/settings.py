@@ -86,6 +86,9 @@ REST_FRAMEWORK = {
     )
 }
 
+# Feature flag: enforce OTP verification once backend verification is ready
+STUDENT_VERIFICATION_REQUIRED = False
+
 # Configure Simple JWT settings
 # campusmate_backend/settings.py
 SIMPLE_JWT = {

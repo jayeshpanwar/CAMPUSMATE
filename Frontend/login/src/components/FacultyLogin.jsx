@@ -37,9 +37,15 @@ function FacultyLogin({ onSwitch }) {
     setLoading(true);
     try {
       const response = await loginUser({ email: formData.email, password: formData.password });
+      localStorage.setItem("access_token", response.data.access);
+      localStorage.setItem("refresh_token", response.data.refresh);
       localStorage.setItem("accessToken", response.data.access);
       localStorage.setItem("refreshToken", response.data.refresh);
-      navigate("/dashboard");
+      localStorage.setItem("user_role", response.data.role || "faculty");
+      localStorage.setItem("user_name", response.data.first_name || "Faculty Member");
+      localStorage.setItem("user_email", response.data.email || formData.email);
+      localStorage.setItem("user_department", response.data.department || "Computer Science");
+      navigate("/faculty/dashboard");
     } catch (err) {
       setError("Login failed. Please check your credentials.");
     } finally {
