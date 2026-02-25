@@ -2,6 +2,8 @@
 
 from pathlib import Path
 from datetime import timedelta # Import this
+import os
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-your-secret-key-goes-here'
@@ -87,7 +89,7 @@ REST_FRAMEWORK = {
 }
 
 # Feature flag: enforce OTP verification once backend verification is ready
-STUDENT_VERIFICATION_REQUIRED = False
+STUDENT_VERIFICATION_REQUIRED = True
 
 # Configure Simple JWT settings
 # campusmate_backend/settings.py
@@ -95,6 +97,27 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5), # <-- Only lasts 5 minutes
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+# Email configuration
+# Use environment variables in production. Defaults to console backend in DEBUG.
+if os.getenv('EMAIL_BACKEND'):
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
+else:
+    # In development, print emails to console so you can read OTPs locally
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# SMTP settings (used when EMAIL_BACKEND is set to smtp backend)
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@campusmate.local')
+
+if not DEBUG and EMAIL_BACKEND.endswith('smtp.EmailBackend'):
+    # In production require credentials
+    if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+        raise ImproperlyConfigured('EMAIL_HOST_USER and EMAIL_HOST_PASSWORD must be set in production')
 
 # Whitelist your React app's URL (Vite default is 5173)
 CORS_ALLOWED_ORIGINS = [

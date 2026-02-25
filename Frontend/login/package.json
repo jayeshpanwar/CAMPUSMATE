@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chatscope/chat-ui-kit-react": "^2.1.1",
+    "@chatscope/chat-ui-kit-styles": "^1.4.0",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
     "jwt-decode": "^4.0.0",

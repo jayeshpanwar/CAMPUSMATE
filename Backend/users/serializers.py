@@ -10,6 +10,18 @@ from rest_framework import serializers
 
 from .models import User
 
+
+def _generate_unique_username(email):
+    """Generate a unique username from the email local part by appending
+    a numeric suffix if needed to avoid username collisions."""
+    base = email.split('@')[0]
+    username = base
+    suffix = 1
+    while User.objects.filter(username=username).exists():
+        username = f"{base}{suffix}"
+        suffix += 1
+    return username
+
 # ✅ ADD THIS CLASS
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -127,7 +139,7 @@ class StudentRegisterSerializer(PasswordConfirmationSerializer):
     
     def create(self, validated_data):
         validated_data.pop('password2')
-        username = validated_data['email'].split('@')[0]
+        username = _generate_unique_username(validated_data['email'])
         user = User.objects.create_user(
             username=username,
             role='student',
@@ -144,7 +156,7 @@ class FacultyRegisterSerializer(PasswordConfirmationSerializer):
         
     def create(self, validated_data):
         validated_data.pop('password2')
-        username = validated_data['email'].split('@')[0]
+        username = _generate_unique_username(validated_data['email'])
         user = User.objects.create_user(
             username=username,
             role='faculty',
@@ -161,7 +173,7 @@ class AdminRegisterSerializer(PasswordConfirmationSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
-        username = validated_data['email'].split('@')[0]
+        username = _generate_unique_username(validated_data['email'])
         user = User.objects.create_user(
             username=username,
             role='admin',

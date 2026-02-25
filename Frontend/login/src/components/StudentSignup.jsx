@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import myImage from "/public/Students.png";
-import { initiateStudentVerification, confirmStudentVerification } from "./api";
+// import myImage from "/public/Students.png";
+import { initiateStudentVerification, confirmStudentVerification, registerStudent } from "./api";
 
 function StudentVerify({ onSwitch }) {
   const navigate = useNavigate();
@@ -34,15 +34,55 @@ function StudentVerify({ onSwitch }) {
 
     setLoading(true);
     try {
+      // First try to register the student (for new accounts)
+      try {
+        await registerStudent({
+          email: email,
+          password: "temp_password_123", // Temporary password, will be set during verification
+          password2: "temp_password_123", // Confirmation
+          first_name: "Student", // Default values, can be updated later
+          last_name: "User"
+        });
+        setMessage("Account created successfully. Sending verification code...");
+      } catch (registerErr) {
+        // If registration fails because account exists, that's okay - proceed with verification
+        if (registerErr.response && registerErr.response.status !== 400) {
+          throw registerErr; // Re-throw if it's not a "account exists" error
+        }
+        // If 400 error, account might already exist, continue with verification
+      }
+
+      // Now initiate verification (works for both new and existing accounts)
       await initiateStudentVerification({ email });
       setStep("verify");
       setMessage("Verification code sent. Check your institutional inbox.");
     } catch (err) {
       if (err.response && err.response.data) {
         const data = err.response.data;
-        const firstKey = Object.keys(data)[0];
-        const value = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
-        setError(typeof value === "string" ? value : "Failed to send verification code.");
+
+        // If backend returned a plain string (or HTML), handle gracefully
+        if (typeof data === 'string') {
+          const trimmed = data.trim();
+          if (trimmed.startsWith('<')) {
+            setError('Server error occurred. Check backend logs.');
+          } else {
+            setError(trimmed);
+          }
+        } else {
+          const firstKey = Object.keys(data)[0];
+          const value = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
+
+          // If account is already verified, redirect to login
+          if (value === "Account is already verified. Try logging in.") {
+            setError("Your account is already verified. Please log in instead.");
+            setTimeout(() => {
+              navigate("/student/login");
+            }, 2000);
+            return;
+          }
+
+          setError(typeof value === "string" ? value : "Failed to send verification code.");
+        }
       } else {
         setError("Unable to send verification code. Try again later.");
       }
@@ -83,9 +123,18 @@ function StudentVerify({ onSwitch }) {
     } catch (err) {
       if (err.response && err.response.data) {
         const data = err.response.data;
-        const firstKey = Object.keys(data)[0];
-        const value = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
-        setError(typeof value === "string" ? value : "Verification failed.");
+        if (typeof data === 'string') {
+          const trimmed = data.trim();
+          if (trimmed.startsWith('<')) {
+            setError('Server error occurred. Check backend logs.');
+          } else {
+            setError(trimmed);
+          }
+        } else {
+          const firstKey = Object.keys(data)[0];
+          const value = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
+          setError(typeof value === "string" ? value : "Verification failed.");
+        }
       } else {
         setError("Verification failed. Try again.");
       }
@@ -98,7 +147,7 @@ function StudentVerify({ onSwitch }) {
   const renderRequestStep = () => (
     <>
       <p className="text-sm text-gray-600">
-        Your account already exists. Enter your institutional email to receive a one-time verification code.
+        Enter your institutional email to create an account or verify an existing one.
       </p>
       <input
         type="email"
@@ -184,7 +233,7 @@ function StudentVerify({ onSwitch }) {
   return (
     <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 sm:px-10 py-8 gap-12 md:gap-20 bg-white font-poppins">
       <img
-        src={myImage}
+        src="/Students.png"
         alt="Verify Student Account"
         className={`w-60 sm:w-80 md:w-[28rem] h-auto object-cover rounded-2xl transition-all duration-700 ease-out 
           ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}

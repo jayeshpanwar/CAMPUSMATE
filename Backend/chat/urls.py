@@ -1,8 +1,11 @@
 # Backend/chat/urls.py
-from django.urls import path
-# from . import views # Import views if you add any HTTP endpoints
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ChatGroupViewSet
+
+router = DefaultRouter()
+router.register(r'groups', ChatGroupViewSet, basename='chat-group')
 
 urlpatterns = [
-    # Add any future HTTP paths for chat here, e.g.:
-    # path('history/<str:room_name>/', views.ChatHistoryView.as_view(), name='chat-history'),
+    path('', include(router.urls)),
 ]

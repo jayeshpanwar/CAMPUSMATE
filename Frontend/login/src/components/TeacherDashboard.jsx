@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getProfile } from "./api";
+import { getProfile, getChatGroups, getGroupMessages, sendGroupMessage } from "./api";
+import SharedMessagesPage from './SharedMessagesPage';
 
 const SidebarIcon = ({ children, className }) => (
   <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${className}`}>
@@ -116,66 +117,6 @@ const TeachersHome = ({ notices, events, insights }) => (
           Export Summary
         </button>
       </div>
-    </section>
-  </div>
-);
-
-const TeachersMessages = ({ conversations, activeId, onSelect, messages, onSend, onStartGroup, newMessage, setNewMessage }) => (
-  <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-12rem)]">
-    <aside className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Message Rooms</h3>
-        <button onClick={onStartGroup} className="px-3 py-2 text-sm font-semibold bg-gray-900 text-white rounded-lg hover:bg-black transition">New Group</button>
-      </div>
-      <div className="p-4 border-b border-gray-200">
-        <input type="text" placeholder="Search threads" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900" />
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {conversations.map((room) => (
-          <button key={room.id} onClick={() => onSelect(room.id)} className={`w-full text-left px-4 py-3 border-b border-gray-100 flex items-center gap-3 hover:bg-gray-50 transition ${room.id === activeId ? "bg-gray-100" : "bg-white"}`}>
-            <div className="w-10 h-10 rounded-xl bg-gray-200 text-gray-700 flex items-center justify-center text-sm font-semibold">{room.initials}</div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">{room.name}</p>
-              <p className="text-xs text-gray-500 truncate">{room.lastMessage}</p>
-            </div>
-            <span className="text-[10px] uppercase text-gray-400">{room.scope}</span>
-          </button>
-        ))}
-      </div>
-    </aside>
-    <section className="lg:col-span-3 bg-white border border-gray-200 rounded-2xl flex flex-col shadow-sm">
-      {activeId ? (
-        <>
-          <header className="p-4 border-b border-gray-200 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gray-200 text-gray-700 flex items-center justify-center text-sm font-semibold">{messages.header.initials}</div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">{messages.header.name}</p>
-              <p className="text-xs text-gray-500">{messages.header.scope}</p>
-            </div>
-            <span className="text-xs text-gray-500">{messages.header.members}</span>
-          </header>
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
-            {messages.items.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.isSelf ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-md px-4 py-3 rounded-2xl border ${msg.isSelf ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-900 border-gray-200"}`}>
-                  <p className="text-xs text-gray-400">{msg.time}</p>
-                  <p className="mt-1 text-sm">{msg.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <form onSubmit={onSend} className="p-4 border-t border-gray-200 bg-white flex items-center gap-3">
-            <input value={newMessage} onChange={(event) => setNewMessage(event.target.value)} placeholder="Send update..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900" />
-            <button type="submit" className="bg-gray-900 text-white rounded-xl p-3 hover:bg-black transition">
-              <SendIcon className="h-5 w-5" />
-            </button>
-          </form>
-        </>
-      ) : (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
-          Select a thread to start.
-        </div>
-      )}
     </section>
   </div>
 );
@@ -537,32 +478,8 @@ const TeacherDashboard = () => {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [calendarForm, setCalendarForm] = useState({ title: "", date: "", branch: "", year: "", time: "10:00", details: "" });
   const [activeConversationId, setActiveConversationId] = useState(null);
-  const [conversations, setConversations] = useState([
-    { id: 1, name: "CSE 6th Sem", initials: "C6", lastMessage: "Session plan shared", scope: "Group" },
-    { id: 2, name: "Project Mentors", initials: "PM", lastMessage: "Review on Friday", scope: "Faculty" },
-    { id: 3, name: "Riya Sharma", initials: "RS", lastMessage: "Clarified assignment", scope: "Student" }
-  ]);
-  const [conversationMessages, setConversationMessages] = useState({
-    1: {
-      header: { name: "CSE 6th Sem", initials: "C6", scope: "Group Broadcast", members: "62 learners" },
-      items: [
-        { id: 1, text: "Reminder: Hackathon brief tonight.", time: "09:20", isSelf: false },
-        { id: 2, text: "Resources uploaded in LMS.", time: "09:45", isSelf: true }
-      ]
-    },
-    2: {
-      header: { name: "Project Mentors", initials: "PM", scope: "Faculty Coordination", members: "8 mentors" },
-      items: [
-        { id: 1, text: "Please review capstone rubrics.", time: "11:10", isSelf: false }
-      ]
-    },
-    3: {
-      header: { name: "Riya Sharma", initials: "RS", scope: "Direct Message", members: "1 learner" },
-      items: [
-        { id: 1, text: "Can we extend the deadline?", time: "10:30", isSelf: false }
-      ]
-    }
-  });
+  const [conversations, setConversations] = useState([]);
+  const [conversationMessages, setConversationMessages] = useState({});
   const [noDuesRequests, setNoDuesRequests] = useState([
     { id: 1, name: "Anuj Patel", roll: "CSE21045", branch: "CSE", year: "4th", subject: "Library Clearance", status: "Pending", remark: "" },
     { id: 2, name: "Sneha Iyer", roll: "ECE20112", branch: "ECE", year: "4th", subject: "Lab Equipment", status: "Approved", remark: "Cleared on 20 Jan" },
@@ -624,6 +541,61 @@ const TeacherDashboard = () => {
     fetchProfile();
   }, []);
 
+  // Fetch chat groups from backend API
+  useEffect(() => {
+    const fetchChatData = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+
+        const groupsResponse = await getChatGroups();
+        const groups = groupsResponse.data || [];
+        
+        // Convert backend groups to conversation format
+        const convos = groups.map(group => ({
+          id: group.id,
+          name: group.name,
+          avatar: group.name.charAt(0).toUpperCase(),
+          group: group.description || 'Group Chat',
+          lastMessage: group.last_message?.content || 'No messages yet',
+          time: group.updated_at ? new Date(group.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'now'
+        }));
+        
+        setConversations(convos);
+        
+        // Fetch messages for each group
+        const msgData = {};
+        for (const group of groups) {
+          try {
+            const messagesResponse = await getGroupMessages(group.id);
+            const messages = messagesResponse.data || [];
+            
+            msgData[group.id] = messages.map((msg) => ({
+              sender: msg.sender?.first_name || msg.sender?.email || 'Unknown',
+              text: msg.content,
+              avatar: (msg.sender?.first_name || msg.sender?.email || 'U').slice(0, 2).toUpperCase(),
+              time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }));
+          } catch (msgErr) {
+            console.warn(`Failed to fetch messages for group ${group.id}`, msgErr);
+            msgData[group.id] = [];
+          }
+        }
+        
+        setConversationMessages(msgData);
+        
+        // Set first conversation as active
+        if (convos.length > 0) {
+          setActiveConversationId(convos[0].id);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch chat groups:', err);
+      }
+    };
+
+    fetchChatData();
+  }, []);
+
   useEffect(() => {
     if (!activeConversationId && conversations.length > 0) {
       setActiveConversationId(conversations[0].id);
@@ -656,45 +628,6 @@ const TeacherDashboard = () => {
     ],
     []
   );
-
-  const handleMessageSend = (event) => {
-    event.preventDefault();
-    if (!newMessage.trim() || !activeConversationId) {
-      return;
-    }
-
-    const nextMessage = {
-      id: Date.now(),
-      text: newMessage.trim(),
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      isSelf: true
-    };
-
-    setConversationMessages((prev) => ({
-      ...prev,
-      [activeConversationId]: {
-        ...prev[activeConversationId],
-        items: [...prev[activeConversationId].items, nextMessage]
-      }
-    }));
-
-    setConversations((prev) => prev.map((room) => (room.id === activeConversationId ? { ...room, lastMessage: newMessage.trim() } : room)));
-    setNewMessage("");
-  };
-
-  const handleStartGroup = () => {
-    const nextId = conversations.length ? Math.max(...conversations.map((room) => room.id)) + 1 : 1;
-    const newRoom = { id: nextId, name: "New Group", initials: "NG", lastMessage: "", scope: "Group" };
-    setConversations((prev) => [newRoom, ...prev]);
-    setConversationMessages((prev) => ({
-      ...prev,
-      [nextId]: {
-        header: { name: "New Group", initials: "NG", scope: "Custom Group", members: "Invite students" },
-        items: []
-      }
-    }));
-    setActiveConversationId(nextId);
-  };
 
   const handleNoDuesDecision = (id, status, remark) => {
     setNoDuesRequests((prev) => prev.map((request) => (request.id === id ? { ...request, status, remark } : request)));
@@ -765,23 +698,19 @@ const TeacherDashboard = () => {
     setIsCalendarModalOpen(false);
   };
 
-  const activeMessages = activeConversationId ? conversationMessages[activeConversationId] : null;
-
   const renderPage = () => {
     switch (activeNav) {
       case "Home":
         return <TeachersHome notices={notices} events={events} insights={insights} />;
       case "Messages":
         return (
-          <TeachersMessages
+          <SharedMessagesPage
             conversations={conversations}
-            activeId={activeConversationId}
-            onSelect={setActiveConversationId}
-            messages={activeMessages || { header: { initials: "", name: "", scope: "", members: "" }, items: [] }}
-            onSend={handleMessageSend}
-            onStartGroup={handleStartGroup}
-            newMessage={newMessage}
-            setNewMessage={setNewMessage}
+            setConversations={setConversations}
+            allMessages={conversationMessages}
+            setAllMessages={setConversationMessages}
+            allUsers={[]}
+            currentUser={user || { name: 'Faculty', initials: 'FM' }}
           />
         );
       case "Search":

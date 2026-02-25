@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// ✅ 1. Import or define the path to your faculty image
-import facultyImage from "/public/Faculty.png"; 
-import { loginUser } from "./api";
+// import facultyImage from "/public/Faculty.png";
 
 function FacultyLogin({ onSwitch }) {
-  // ✅ 2. Add the animate state back
   const [animate, setAnimate] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState("faculty"); 
+  const [role, setRole] = useState("faculty");
   const navigate = useNavigate();
 
-  // ✅ 3. Add the useEffect to trigger the animation
   useEffect(() => {
     setAnimate(true);
   }, []);
@@ -21,7 +17,6 @@ function FacultyLogin({ onSwitch }) {
   const handleRoleChange = (e) => {
     const selectedRole = e.target.value;
     setRole(selectedRole);
-
     if (selectedRole === "student") {
       navigate("/student/login");
     } else if (selectedRole === "faculty") {
@@ -31,38 +26,33 @@ function FacultyLogin({ onSwitch }) {
     }
   };
 
+  // BYPASS LOGIN: Directly set tokens and user info, then navigate to dashboard
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    try {
-      const response = await loginUser({ email: formData.email, password: formData.password });
-      localStorage.setItem("access_token", response.data.access);
-      localStorage.setItem("refresh_token", response.data.refresh);
-      localStorage.setItem("accessToken", response.data.access);
-      localStorage.setItem("refreshToken", response.data.refresh);
-      localStorage.setItem("user_role", response.data.role || "faculty");
-      localStorage.setItem("user_name", response.data.first_name || "Faculty Member");
-      localStorage.setItem("user_email", response.data.email || formData.email);
-      localStorage.setItem("user_department", response.data.department || "Computer Science");
-      navigate("/faculty/dashboard");
-    } catch (err) {
-      setError("Login failed. Please check your credentials.");
-    } finally {
-      setLoading(false);
-    }
+
+    // Bypass login: set mock tokens and user info
+    localStorage.setItem("access_token", "mock_access_token");
+    localStorage.setItem("refresh_token", "mock_refresh_token");
+    localStorage.setItem("accessToken", "mock_access_token");
+    localStorage.setItem("refreshToken", "mock_refresh_token");
+    localStorage.setItem("user_role", role || "faculty");
+    localStorage.setItem("user_name", formData.email || "Faculty Member");
+    localStorage.setItem("user_email", formData.email || "faculty@example.com");
+    localStorage.setItem("user_department", "Computer Science");
+    setLoading(false);
+    navigate("/faculty/dashboard");
   };
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 py-8 gap-12 md:gap-20 bg-white font-poppins">
-      {/* ✅ 4. Add the <img> tag back with animation classes */}
       <img
-        src={facultyImage}
+        src="/Faculty.png"
         alt="Faculty Login"
         className={`w-60 sm:w-80 md:w-[28rem] h-auto object-cover rounded-2xl transition-all duration-700 ease-out 
         ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}
       />
-
       <form
         onSubmit={handleSubmit}
         className={`w-full max-w-md space-y-6 transition-all duration-700 ease-out 
@@ -71,7 +61,6 @@ function FacultyLogin({ onSwitch }) {
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
           Faculty Login
         </h1>
-
         <select
           value={role}
           onChange={handleRoleChange}
@@ -81,7 +70,6 @@ function FacultyLogin({ onSwitch }) {
           <option value="faculty">Faculty</option>
           <option value="admin">Admin</option>
         </select>
-
         <input
           type="email"
           placeholder="College Email ID"
@@ -98,9 +86,7 @@ function FacultyLogin({ onSwitch }) {
           className="w-full px-4 py-3 rounded-xl bg-[#f0f8ff] text-gray-700 placeholder-[#4F6EF7] focus:outline-none focus:ring-2 focus:ring-[#cdd8ff] border-none"
           required
         />
-        
         {error && <p className="text-center text-sm text-red-600">{error}</p>}
-
         <button
           type="submit"
           disabled={loading}
@@ -108,7 +94,6 @@ function FacultyLogin({ onSwitch }) {
         >
           {loading ? "Logging in..." : "Login"}
         </button>
-
         <div className="text-center text-sm text-gray-700">
           Don’t have an account?{" "}
           <span onClick={onSwitch} className="font-semibold text-gray-500 cursor-pointer hover:underline">

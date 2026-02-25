@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // ✅ 1. Import or define the path to your faculty image
-import facultyImage from "/public/Faculty.png"; 
+// import facultyImage from "/public/Faculty.png"; 
 import { registerFaculty } from "./api";
 
 function FacultySignup({ onSwitch }) {
@@ -59,8 +59,7 @@ function FacultySignup({ onSwitch }) {
     <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 sm:px-10 py-8 gap-12 md:gap-20 bg-white font-poppins">
       {/* ✅ 4. Add the <img> tag back with animation classes */}
       <img
-        src={facultyImage}
-        alt="Faculty Signup"
+        src="/Faculty.png"
         className={`w-60 sm:w-80 md:w-[28rem] h-auto object-cover rounded-2xl transition-all duration-700 ease-out 
         ${animate ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-6 scale-95"}`}
       />

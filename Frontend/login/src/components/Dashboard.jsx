@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import apiClient, { getProfile } from "./api";
+import apiClient, { getProfile, getChatGroups, getGroupMessages, sendGroupMessage } from "./api";
+import SharedMessagesPage from './SharedMessagesPage';
 
 // --- Icon Components ---
 const HomeIcon = ({ className }) => (
@@ -315,121 +316,7 @@ const DashboardPage = ({
     </div>
 );
 
-const MessagesPage = ({ conversations, setConversations, allMessages, setAllMessages, allUsers, currentUser }) => {
-    const [activeConversationId, setActiveConversationId] = useState(1);
-    const [newMessage, setNewMessage] = useState('');
-    const [isNewConvoModalOpen, setIsNewConvoModalOpen] = useState(false);
-    const chatEndRef = useRef(null);
-
-    useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [allMessages, activeConversationId]);
-    
-    const handleConversationSelect = (id) => { setActiveConversationId(id); };
-
-    const handleSendMessage = (e) => {
-        e.preventDefault();
-        if (newMessage.trim() === '') return;
-        const messageToSend = {
-            sender: 'You',
-            text: newMessage,
-            avatar: currentUser.initials,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setAllMessages(prevMessages => {
-            const currentMessages = prevMessages[activeConversationId] || [];
-            return { ...prevMessages, [activeConversationId]: [...currentMessages, messageToSend] };
-        });
-        setConversations(prevConvos => {
-            const convoToUpdate = prevConvos.find(c => c.id === activeConversationId);
-            const otherConvos = prevConvos.filter(c => c.id !== activeConversationId);
-            const updatedConvo = { ...convoToUpdate, lastMessage: newMessage, time: 'Just now' };
-            return [updatedConvo, ...otherConvos];
-        });
-        setNewMessage('');
-    };
-    
-    const startNewConversation = (user) => {
-        const newId = conversations.length > 0 ? Math.max(...conversations.map(c => c.id)) + 1 : 1;
-        const newConversation = {
-            id: newId,
-            name: user.name,
-            group: 'Direct Message',
-            avatar: user.initials,
-            lastMessage: 'Conversation started.',
-            time: 'Just now'
-        };
-        setConversations(prev => [newConversation, ...prev]);
-        setAllMessages(prev => ({...prev, [newId]: [] }));
-        setActiveConversationId(newId);
-        setIsNewConvoModalOpen(false);
-    };
-
-    const activeConversation = conversations.find(c => c.id === activeConversationId);
-    const activeMessages = allMessages[activeConversationId] || [];
-
-    return (
-        <>
-            {isNewConvoModalOpen && (
-                <NewConversationModal onClose={() => setIsNewConvoModalOpen(false)} onStartConversation={startNewConversation} allUsers={allUsers} currentUser={currentUser} />
-            )}
-            <div className="flex h-[calc(100vh-8rem)] bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
-                    <div className="p-4 border-b border-gray-200 flex-shrink-0">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-gray-800">Messages</h2>
-                            <button onClick={() => setIsNewConvoModalOpen(true)} className="bg-indigo-600 text-white rounded-full p-2 hover:bg-indigo-700">
-                                <PlusIcon className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <input type="text" placeholder="Search Messages" className="w-full mt-4 p-2 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                        {conversations.map(convo => (
-                            <div key={convo.id} onClick={() => handleConversationSelect(convo.id)} className={`p-4 flex items-center space-x-4 cursor-pointer hover:bg-gray-50 ${convo.id === activeConversationId ? 'bg-indigo-50 border-r-4 border-indigo-600' : ''}`}>
-                                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl flex-shrink-0">{convo.avatar}</div>
-                                <div className="flex-1 overflow-hidden">
-                                    <div className="flex justify-between items-center"><p className="font-semibold text-gray-800 truncate">{convo.name}</p><p className="text-xs text-gray-500 flex-shrink-0 ml-2">{convo.time}</p></div>
-                                    <p className="text-sm text-gray-600 truncate">{convo.lastMessage}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div className={`w-2/3 hidden md:flex flex-col ${activeConversation ? '' : 'justify-center items-center'}`}>
-                    {activeConversation ? (
-                        <>
-                            <div className="p-4 border-b border-gray-200 flex items-center space-x-3 h-20 flex-shrink-0">
-                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xl">{activeConversation.avatar}</div>
-                                <div><h3 className="font-bold text-gray-800">{activeConversation.name}</h3><p className="text-sm text-gray-500">{activeConversation.group}</p></div>
-                            </div>
-                            <div className="flex-1 p-6 overflow-y-auto bg-gray-50 space-y-6">
-                                {activeMessages.map((msg, index) => (
-                                    <div key={index} className={`flex items-start space-x-4 ${msg.sender === 'You' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${msg.sender === 'You' ? 'bg-indigo-200' : 'bg-gray-300'}`}>{msg.avatar}</div>
-                                        <div className={`flex flex-col ${msg.sender === 'You' ? 'items-end' : 'items-start'}`}>
-                                            <p className="font-semibold text-gray-800 text-sm">{msg.sender}</p>
-                                            <div className={`p-3 rounded-lg mt-1 max-w-lg whitespace-pre-wrap ${msg.sender === 'You' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}>{msg.text}</div>
-                                        </div>
-                                    </div>
-                                ))}
-                                 <div ref={chatEndRef} />
-                            </div>
-                            <div className="p-4 bg-white border-t border-gray-200 flex-shrink-0">
-                                <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-                                    <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1 p-3 border rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                                    <button type="submit" className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 transition-colors"><SendIcon className="w-6 h-6" /></button>
-                                </form>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="text-center text-gray-500"><MessageSquareIcon className="w-16 h-16 mx-auto mb-4" /><h2 className="text-xl font-semibold">Select a conversation</h2><p>Choose one of your existing conversations to start chatting.</p></div>
-                    )}
-                </div>
-            </div>
-        </>
-    );
-};
+const MessagesPage = SharedMessagesPage;
 
 const NewConversationModal = ({ onClose, onStartConversation, allUsers, currentUser }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -1196,8 +1083,48 @@ const Dashboard = () => {
 
                 setUser({ ...finalUser, initials });
                 setAllUsers([]);
-                setConversations([]);
-                setAllMessages({});
+
+                // Fetch chat groups from backend API
+                try {
+                    const groupsResponse = await getChatGroups();
+                    const groups = groupsResponse.data || [];
+                    
+                    // Convert backend groups to conversation format
+                    const conversations = groups.map(group => ({
+                        id: group.id,
+                        name: group.name,
+                        group: group.description || 'Group',
+                        avatar: group.name.charAt(0),
+                        lastMessage: group.last_message?.content || 'No messages yet',
+                        time: group.updated_at ? new Date(group.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'now'
+                    }));
+                    
+                    // Fetch messages for each group
+                    const allMsg = {};
+                    for (const group of groups) {
+                        try {
+                            const messagesResponse = await getGroupMessages(group.id);
+                            const messages = messagesResponse.data || [];
+                            
+                            allMsg[group.id] = messages.map(msg => ({
+                                sender: msg.sender?.first_name || msg.sender?.email || 'Unknown',
+                                text: msg.content,
+                                avatar: (msg.sender?.first_name || msg.sender?.email || 'U').slice(0, 2).toUpperCase(),
+                                time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            }));
+                        } catch (msgErr) {
+                            console.warn(`Failed to fetch messages for group ${group.id}`, msgErr);
+                            allMsg[group.id] = [];
+                        }
+                    }
+                    
+                    setConversations(conversations);
+                    setAllMessages(allMsg);
+                } catch (chatErr) {
+                    console.warn('Chat groups fetch failed, using empty state', chatErr);
+                    setConversations([]);
+                    setAllMessages({});
+                }
 
                 let sanitizedNotices = [];
                 if (token) {
@@ -1395,7 +1322,14 @@ const Dashboard = () => {
     const Sidebar = () => (
         <aside className={`bg-white w-64 min-h-screen flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:relative`}>
             <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-center h-20">
-                <div className="bg-indigo-600 text-white w-10 h-10 rounded-lg flex items-center justify-center text-2xl font-bold">Q</div>
+             <div className="flex flex-col items-center justify-center bg-indigo-600 text-white px-5 py-2 rounded-xl shadow-lg leading-tight">
+  <span className="text-sm font-medium tracking-[0.2em] opacity-90 uppercase">
+    CampusMate
+  </span>
+  <span className="text-2xl font-black tracking-tight">
+    Student Panel
+  </span>
+</div>
             </div>
             <nav className="flex-1 px-4 py-6 space-y-2">
                 {navItems.map(item => (

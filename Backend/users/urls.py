@@ -1,9 +1,8 @@
-# users/urls.py
-
 from django.urls import path
 from .views import (
     FacultyRegisterView,
     AdminRegisterView,
+    StudentRegisterView,
     ProfileView,
     StudentOnlyView,
     FacultyOnlyView,
@@ -18,6 +17,7 @@ urlpatterns = [
     # --- Registration URLs ---
     path('register/faculty/', FacultyRegisterView.as_view(), name='register-faculty'),
     path('register/admin/', AdminRegisterView.as_view(), name='register-admin'),
+    path('register/student/', StudentRegisterView.as_view(), name='register-student'),
 
     # --- Login/Auth URLs ---
     path('login/', CustomLoginView.as_view(), name='login'),
