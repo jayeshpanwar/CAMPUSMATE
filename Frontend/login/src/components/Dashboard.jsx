@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import apiClient, { getProfile, getChatGroups, getGroupMessages, sendGroupMessage } from "./api";
+import { useNavigate } from 'react-router-dom';
+import apiClient, { getProfile, getChatGroups, getGroupMessages, getNoDuesSubjects, getNoDuesApplications, applyNoDues } from "./api";
 import SharedMessagesPage from './SharedMessagesPage';
 
 // --- Icon Components ---
@@ -806,59 +807,146 @@ const SearchPage = () => (
     <div className="p-8 bg-white rounded-xl shadow-md"><h1 className="text-3xl font-bold text-gray-800">Search</h1><p className="text-gray-500 mt-2">This page is under construction.</p></div>
 );
 
-const SettingsPage = () => (
-    <div className="p-8 bg-white rounded-xl shadow-md"><h1 className="text-3xl font-bold text-gray-800">Settings</h1><p className="text-gray-500 mt-2">This page is under construction.</p></div>
-);
+const SettingsPage = ({ user }) => {
+    const settingsKey = `campusmate_settings_${user?.role || 'student'}`;
+    const [form, setForm] = useState(() => {
+        try {
+            const stored = localStorage.getItem(settingsKey);
+            if (stored) {
+                return JSON.parse(stored);
+            }
+        } catch (err) {
+            console.warn('Failed to parse settings', err);
+        }
+        return {
+            emailNotifications: true,
+            noticeReminders: true,
+            compactMode: false,
+            dailyDigestHour: '20:00',
+        };
+    });
+    const [saved, setSaved] = useState(false);
+
+    const updateToggle = (key) => {
+        setSaved(false);
+        setForm((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleSave = () => {
+        localStorage.setItem(settingsKey, JSON.stringify(form));
+        setSaved(true);
+    };
+
+    return (
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6 max-w-3xl">
+            <header>
+                <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
+                <p className="text-sm text-gray-500 mt-1">Manage your dashboard preferences and reminders.</p>
+            </header>
+
+            <div className="space-y-4">
+                <label className="flex items-center justify-between border border-gray-200 rounded-xl p-4">
+                    <div>
+                        <p className="font-semibold text-gray-800">Email notifications</p>
+                        <p className="text-xs text-gray-500">Receive important notices and updates by email.</p>
+                    </div>
+                    <input type="checkbox" checked={form.emailNotifications} onChange={() => updateToggle('emailNotifications')} className="h-5 w-5" />
+                </label>
+
+                <label className="flex items-center justify-between border border-gray-200 rounded-xl p-4">
+                    <div>
+                        <p className="font-semibold text-gray-800">Notice reminders</p>
+                        <p className="text-xs text-gray-500">Show reminder prompts for time-bound notices.</p>
+                    </div>
+                    <input type="checkbox" checked={form.noticeReminders} onChange={() => updateToggle('noticeReminders')} className="h-5 w-5" />
+                </label>
+
+                <label className="flex items-center justify-between border border-gray-200 rounded-xl p-4">
+                    <div>
+                        <p className="font-semibold text-gray-800">Compact view</p>
+                        <p className="text-xs text-gray-500">Reduce card spacing in dashboard pages.</p>
+                    </div>
+                    <input type="checkbox" checked={form.compactMode} onChange={() => updateToggle('compactMode')} className="h-5 w-5" />
+                </label>
+
+                <label className="block border border-gray-200 rounded-xl p-4">
+                    <p className="font-semibold text-gray-800">Daily digest time</p>
+                    <p className="text-xs text-gray-500 mb-2">Preferred time to review tasks and upcoming events.</p>
+                    <input
+                        type="time"
+                        value={form.dailyDigestHour}
+                        onChange={(event) => {
+                            setSaved(false);
+                            setForm((prev) => ({ ...prev, dailyDigestHour: event.target.value }));
+                        }}
+                        className="rounded-lg border border-gray-300 px-3 py-2"
+                    />
+                </label>
+            </div>
+
+            <div className="flex items-center gap-3">
+                <button type="button" onClick={handleSave} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+                    Save settings
+                </button>
+                {saved && <span className="text-sm text-green-600 font-medium">Saved successfully.</span>}
+            </div>
+        </div>
+    );
+};
 
 
 // ==========================================
 //  NO-DUES PAGE COMPONENT (The Missing Part)
 // ==========================================
 const NoDuesPage = ({ user }) => {
-    // ⚠️ UPDATE THIS if your backend URL is different (e.g. /campusmate    http://localhost:8080/nodues_war_exploded/api/nodues instead of /backend)
-  const API_BASE_URL = "http://localhost:8080/nodues_war_exploded/api/nodues";
-
-    // --- STATE ---
     const [clearanceItems, setClearanceItems] = useState([]);
+    const [filter, setFilter] = useState({ department: 'CSE', class_year: '4', semester: '7' });
     const [isLoading, setIsLoading] = useState(true);
-
-    // --- FETCH DATA ON LOAD ---
-    useEffect(() => {
-        if (user) {
-            fetchDuesData();
-        }
-    }, [user]);
+    const [error, setError] = useState('');
 
     const fetchDuesData = async () => {
         setIsLoading(true);
+        setError('');
         try {
-            // Hardcoded Branch/Sem for now
-            const branch = "CSE"; 
-            const sem = "7"; 
-            
-            // Fetching from your Servlet
-            const response = await fetch(`${API_BASE_URL}?studentId=${user.enrollment}&branch=${branch}&semester=${sem}`);
-            
-            if (response.ok) {
-                const data = await response.json();
-                
-                // Map the Backend Data to our Frontend UI Structure
-                const mappedData = data.map(item => ({
-                    id: parseInt(item.configId), // Ensure ID is a number
-                    name: item.name,
-                    category: item.category === "Academic" ? "Academic" : "Admin",
-                    status: item.status, // "NOT_APPLIED", "PENDING", "APPROVED", "REJECTED"
-                    remark: item.remark || ""
-                }));
-                
-                setClearanceItems(mappedData);
-            }
+            const [subjectsRes, appsRes] = await Promise.all([
+                getNoDuesSubjects(filter),
+                getNoDuesApplications(),
+            ]);
+
+            const subjectRows = subjectsRes.data || [];
+            const appRows = appsRes.data || [];
+            const appBySubjectId = Object.fromEntries(appRows.map((row) => [row.subject?.id, row]));
+
+            const mappedData = subjectRows.map((row) => {
+                const app = appBySubjectId[row.id];
+                let status = 'NOT_APPLIED';
+                if (app?.status === 'PENDING') status = 'PENDING';
+                if (app?.status === 'APPROVED') status = 'APPROVED';
+                if (app?.status === 'REJECTED') status = 'REJECTED';
+
+                return {
+                    id: row.id,
+                    name: row.subject_name,
+                    category: 'Academic',
+                    status,
+                    remark: app?.remark || '',
+                };
+            });
+
+            setClearanceItems(mappedData);
         } catch (error) {
-            console.error("Failed to connect to backend:", error);
+            console.error('Failed to load no-dues data', error);
+            setError('Could not load no-dues records. Try again.');
         } finally {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (user) {
+            fetchDuesData();
+        }
+    }, [user, filter.department, filter.class_year, filter.semester]);
 
     // --- FILTERS ---
     const rejectedItems = clearanceItems.filter(i => i.status === 'REJECTED');
@@ -868,26 +956,9 @@ const NoDuesPage = ({ user }) => {
 
     // --- HANDLERS ---
     const handleRequestSingle = async (configId) => {
-        setClearanceItems(prev => prev.map(item => item.id === configId ? { ...item, status: "PENDING" } : item));
-
         try {
-            const response = await fetch(API_BASE_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "APPLY_SINGLE",
-                    studentId: user.enrollment,
-                    studentName: user.name,
-                    branch: "CSE",
-                    semester: 7,
-                    configId: configId
-                })
-            });
-
-            if (!response.ok) {
-                fetchDuesData(); 
-                alert("Failed to send request. Server might be down.");
-            }
+            await applyNoDues(configId);
+            fetchDuesData();
         } catch (e) {
             console.error(e);
         }
@@ -899,6 +970,36 @@ const NoDuesPage = ({ user }) => {
 
     return (
         <div className="flex flex-col gap-6 h-full pb-20 md:pb-0 overflow-y-auto custom-scrollbar">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-end gap-3">
+                    <label className="text-sm text-gray-700">
+                        Department
+                        <input
+                            value={filter.department}
+                            onChange={(event) => setFilter((prev) => ({ ...prev, department: event.target.value }))}
+                            className="mt-1 ml-2 rounded-lg border border-gray-300 px-3 py-1.5"
+                        />
+                    </label>
+                    <label className="text-sm text-gray-700">
+                        Class Year
+                        <input
+                            value={filter.class_year}
+                            onChange={(event) => setFilter((prev) => ({ ...prev, class_year: event.target.value }))}
+                            className="mt-1 ml-2 rounded-lg border border-gray-300 px-3 py-1.5"
+                        />
+                    </label>
+                    <label className="text-sm text-gray-700">
+                        Semester
+                        <input
+                            value={filter.semester}
+                            onChange={(event) => setFilter((prev) => ({ ...prev, semester: event.target.value }))}
+                            className="mt-1 ml-2 rounded-lg border border-gray-300 px-3 py-1.5"
+                        />
+                    </label>
+                    <button onClick={fetchDuesData} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700">Refresh</button>
+                </div>
+
+                {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</div>}
+
             {isLoading && (
                 <div className="text-center py-10 text-gray-500 animate-pulse">Connecting to Department Database...</div>
             )}
@@ -978,6 +1079,9 @@ const NoDuesPage = ({ user }) => {
 
 
 const Dashboard = () => {
+    // --- NAVIGATION HOOK ---
+    const navigate = useNavigate();
+    
     // --- STATE MANAGEMENT ---
     const [user, setUser] = useState(null);
     const [allUsers, setAllUsers] = useState([]);
@@ -1151,13 +1255,36 @@ const Dashboard = () => {
                     sanitizedNotices = fallbackNoticeFeed;
                 }
                 setNotices(sanitizedNotices);
-            } catch (err) {
+            } catch (_err) {
                 setError("Couldn't load dashboard data. Please try refreshing the page.");
             } finally {
                 setIsLoading(false);
             }
         };
         fetchInitialData();
+    }, []);
+
+    // respond to changes in localStorage (e.g. another tab logs in as faculty)
+    useEffect(() => {
+        const handleStorage = (e) => {
+            if (e.key === 'user_role') {
+                const newRole = e.newValue;
+                if (newRole && newRole !== 'student') {
+                    // if our dashboard is open but role switched, redirect away
+                    if (newRole === 'faculty') {
+                        window.location.href = '/faculty/dashboard';
+                    } else {
+                        window.location.href = '/';
+                    }
+                }
+            }
+            if (e.key === 'user_name') {
+                // update user name in state if same role still
+                setUser((prev) => prev ? { ...prev, name: e.newValue } : prev);
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
     }, []);
 
     useEffect(() => {
@@ -1195,6 +1322,22 @@ const Dashboard = () => {
         return () => document.removeEventListener('mousedown', handleOutsideClick);
     }, [isProfileOpen, profilePanelRef]);
 
+    const handleLogout = () => {
+        // Clear all authentication tokens and user data from localStorage
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_enrollment');
+        
+        // Redirect to login page
+        navigate('/student/login');
+    };
+
     useEffect(() => {
         if (isProfileOpen) {
             setIsProfileOpen(false);
@@ -1204,9 +1347,80 @@ const Dashboard = () => {
     // --- REAL-TIME WEBSOCKET LOGIC (Skipped for brevity, same as yours) ---
     // ...
 
-    // --- GEMINI API CALLS (Skipped for brevity, same as yours) ---
-    const handleGenerateStudyPlan = async () => { /* ... */ };
-    const handleGenerateDaySummary = async (events, date) => { /* ... */ };
+    const handleGenerateStudyPlan = async () => {
+        setIsStudyPlanModalOpen(true);
+        setIsGeneratingPlan(true);
+
+        const today = new Date();
+        const pendingTasks = studentTasks.filter((task) => !task.completed).slice(0, 5);
+        const topNotices = notices.slice(0, 3);
+        const weeklyEvents = eventShowcase.slice(0, 3);
+
+        const lines = [
+            `Personalized Study Plan for ${user?.name || 'Student'}`,
+            `Generated on ${today.toLocaleString('en-IN')}`,
+            '',
+            '1) Priority Focus (Today):',
+        ];
+
+        if (pendingTasks.length === 0) {
+            lines.push('- Revise core concepts for 45 minutes and solve 10 mixed practice questions.');
+        } else {
+            pendingTasks.forEach((task, index) => {
+                lines.push(`${index + 1}. ${task.title}${task.dueDate ? ` (due ${task.dueDate})` : ''}`);
+            });
+        }
+
+        lines.push('', '2) Weekly Rhythm:');
+        lines.push('- Mon-Wed-Fri: 2-hour deep work block for difficult subjects.');
+        lines.push('- Tue-Thu: 1-hour revision + 30-minute quiz practice.');
+        lines.push('- Sat: Mock test + weak-topic review.');
+        lines.push('- Sun: Consolidation, notes cleanup, and next-week planning.');
+
+        if (topNotices.length > 0) {
+            lines.push('', '3) Important Notices to Track:');
+            topNotices.forEach((notice) => lines.push(`- ${notice.title}`));
+        }
+
+        if (weeklyEvents.length > 0) {
+            lines.push('', '4) Campus Events You Should Leverage:');
+            weeklyEvents.forEach((event) => lines.push(`- ${event.title} (${event.date})`));
+        }
+
+        lines.push('', '5) Daily Checklist:');
+        lines.push('- 25 min revision of previous class notes.');
+        lines.push('- 60-90 min focused study without distractions.');
+        lines.push('- 15 min summary notes at end of session.');
+
+        setStudyPlan(lines.join('\n'));
+        setIsGeneratingPlan(false);
+    };
+
+    const handleGenerateDaySummary = async (events, date) => {
+        setIsSummaryModalOpen(true);
+        setIsGeneratingSummary(true);
+
+        const sorted = [...events].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+        const lines = [
+            `Day Summary for ${date.toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' })}`,
+            '',
+        ];
+
+        if (sorted.length === 0) {
+            lines.push('No events scheduled. Use this as a deep-study day and complete pending tasks.');
+        } else {
+            sorted.forEach((event, index) => {
+                lines.push(`${index + 1}. ${event.time || '--:--'} - ${event.title}`);
+                if (event.details) {
+                    lines.push(`   Notes: ${event.details}`);
+                }
+            });
+            lines.push('', 'Recommended flow: Finish high-focus work before first event and reserve evening for revision.');
+        }
+
+        setDaySummary(lines.join('\n'));
+        setIsGeneratingSummary(false);
+    };
 
     // --- UI RENDERING LOGIC ---
     if (isLoading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600"></div></div>;
@@ -1303,7 +1517,7 @@ const Dashboard = () => {
             case 'Search':
                 return <SearchPage />;
             case 'Settings':
-                 return <SettingsPage />;
+                  return <SettingsPage user={user} />;
             default:
                 return (
                     <DashboardPage
@@ -1446,6 +1660,13 @@ const Dashboard = () => {
                                 }}
                             >
                                 Manage profile & settings
+                            </button>
+                            <button
+                                type="button"
+                                className="w-full text-sm font-semibold text-red-600 border border-red-100 hover:border-red-300 hover:bg-red-50 rounded-lg py-2 transition"
+                                onClick={handleLogout}
+                            >
+                                Logout
                             </button>
                             <p className="text-[11px] text-gray-400 text-center">Need edits? Contact faculty advisor for official changes.</p>
                         </div>

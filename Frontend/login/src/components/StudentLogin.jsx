@@ -40,12 +40,28 @@ function StudentLogin({ onSwitch }) {
     try {
       const response = await loginUser({ email: formData.email, password: formData.password });
       if (response.data.access) {
+        // Clear all old user data first
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_department');
+        localStorage.removeItem('user_enrollment');
+        
+        // Set new user data
         localStorage.setItem('access_token', response.data.access);
         localStorage.setItem('refresh_token', response.data.refresh);
+        localStorage.setItem('accessToken', response.data.access);
         localStorage.setItem('user_id', response.data.user_id);
         localStorage.setItem('user_email', response.data.email);
         localStorage.setItem('user_role', response.data.role);
-        localStorage.setItem('user_name', response.data.first_name);
+        // Combine first and last name
+        const fullName = `${response.data.first_name} ${response.data.last_name || ''}`.trim();
+        localStorage.setItem('user_name', fullName);
         navigate("/dashboard");
       }
     } catch (err) {

@@ -37,11 +37,38 @@ function AdminLogin({ onSwitch }) {
     setLoading(true);
     try {
       const response = await loginUser({ email: formData.email, password: formData.password });
-      localStorage.setItem("accessToken", response.data.access);
-      localStorage.setItem("refreshToken", response.data.refresh);
-      navigate("/dashboard");
+      if (response.data.access) {
+        // Clear all old user data first
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_department');
+        localStorage.removeItem('user_enrollment');
+        
+        // Set new user data
+        localStorage.setItem('access_token', response.data.access);
+        localStorage.setItem('refresh_token', response.data.refresh);
+        localStorage.setItem('accessToken', response.data.access);
+        localStorage.setItem('refreshToken', response.data.refresh);
+        localStorage.setItem('user_id', response.data.user_id);
+        localStorage.setItem('user_email', response.data.email);
+        localStorage.setItem('user_role', response.data.role);
+        // Combine first and last name for admin
+        const fullName = `${response.data.first_name} ${response.data.last_name || ''}`.trim();
+        localStorage.setItem('user_name', fullName);
+        navigate("/dashboard");
+      }
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
+      if (err.response && err.response.data) {
+        setError(err.response.data.error || "Login failed");
+      } else {
+        setError("Network error. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

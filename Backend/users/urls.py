@@ -10,6 +10,9 @@ from .views import (
     CustomLoginView,
     StudentVerificationInitiateView,
     StudentVerificationConfirmView,
+    NoDuesSubjectView,
+    NoDuesApplicationView,
+    NoDuesDecisionView,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -32,4 +35,9 @@ urlpatterns = [
     path('student-only/', StudentOnlyView.as_view(), name='student-only'),
     path('faculty-only/', FacultyOnlyView.as_view(), name='faculty-only'),
     path('admin-only/', AdminOnlyView.as_view(), name='admin-only'),
+
+    # --- No-Dues URLs ---
+    path('no-dues/subjects/', NoDuesSubjectView.as_view(), name='no-dues-subjects'),
+    path('no-dues/applications/', NoDuesApplicationView.as_view(), name='no-dues-applications'),
+    path('no-dues/applications/<int:application_id>/decision/', NoDuesDecisionView.as_view(), name='no-dues-decision'),
 ]

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { loginUser } from "./api";
 // import facultyImage from "/public/Faculty.png";
 
 function FacultyLogin({ onSwitch }) {
@@ -26,23 +27,53 @@ function FacultyLogin({ onSwitch }) {
     }
   };
 
-  // BYPASS LOGIN: Directly set tokens and user info, then navigate to dashboard
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Bypass login: set mock tokens and user info
-    localStorage.setItem("access_token", "mock_access_token");
-    localStorage.setItem("refresh_token", "mock_refresh_token");
-    localStorage.setItem("accessToken", "mock_access_token");
-    localStorage.setItem("refreshToken", "mock_refresh_token");
-    localStorage.setItem("user_role", role || "faculty");
-    localStorage.setItem("user_name", formData.email || "Faculty Member");
-    localStorage.setItem("user_email", formData.email || "faculty@example.com");
-    localStorage.setItem("user_department", "Computer Science");
-    setLoading(false);
-    navigate("/faculty/dashboard");
+    try {
+      const response = await loginUser({ email: formData.email, password: formData.password });
+      if (response.data.access) {
+        // Clear all old user data first
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_department');
+        localStorage.removeItem('user_enrollment');
+        
+        // Set new user data
+        localStorage.setItem('access_token', response.data.access);
+        localStorage.setItem('refresh_token', response.data.refresh);
+        localStorage.setItem('accessToken', response.data.access);
+        localStorage.setItem('refreshToken', response.data.refresh);
+        localStorage.setItem('user_id', response.data.user_id);
+        localStorage.setItem('user_email', response.data.email);
+        localStorage.setItem('user_role', response.data.role);
+        // Combine first and last name for faculty
+        const fullName = `${response.data.first_name} ${response.data.last_name || ''}`.trim();
+        localStorage.setItem('user_name', fullName);
+        localStorage.setItem('user_department', response.data.department || "");
+        navigate("/faculty/dashboard");
+      }
+    } catch (err) {
+      if (err.response && err.response.data) {
+        setError(err.response.data.error || "Login failed");
+      } else {
+        setError("Network error. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

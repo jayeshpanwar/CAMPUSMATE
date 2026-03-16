@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getProfile, getChatGroups, getGroupMessages, sendGroupMessage } from "./api";
+import { useNavigate } from "react-router-dom";
+import {
+  getProfile,
+  getChatGroups,
+  getGroupMessages,
+  getFacultyNotices,
+  createFacultyNotice,
+  getNoDuesSubjects,
+  createNoDuesSubject,
+  getNoDuesApplications,
+  reviewNoDuesApplication,
+} from "./api";
 import SharedMessagesPage from './SharedMessagesPage';
 
 const SidebarIcon = ({ children, className }) => (
@@ -44,6 +55,13 @@ const ClipboardIcon = ({ className }) => (
   </svg>
 );
 
+const SettingsIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
 const MenuIcon = ({ className }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="12" x2="21" y2="12" />
@@ -72,7 +90,25 @@ const XIcon = ({ className }) => (
   </svg>
 );
 
-const TeachersHome = ({ notices, events, insights }) => (
+const LogoutIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const TeachersHome = ({
+  notices,
+  events,
+  insights,
+  noticeForm,
+  onNoticeFormChange,
+  onPublishNotice,
+  noticeGroups,
+  noticePublishState,
+  isPublishingNotice,
+}) => (
   <div className="space-y-6">
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="bg-white text-gray-900 rounded-2xl p-6 border border-gray-200 shadow-sm">
@@ -117,6 +153,35 @@ const TeachersHome = ({ notices, events, insights }) => (
           Export Summary
         </button>
       </div>
+    </section>
+
+    <section className="bg-white text-gray-900 rounded-2xl p-6 border border-gray-200 shadow-sm">
+      <h3 className="text-lg font-semibold">Publish Notice With Auto-Reminder</h3>
+      <p className="text-sm text-gray-500 mt-1">A reminder message is auto-sent to the selected group before notice end time.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <input name="title" value={noticeForm.title} onChange={onNoticeFormChange} placeholder="Notice title" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <select name="target_group" value={noticeForm.target_group} onChange={onNoticeFormChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <option value="">Select group</option>
+          {noticeGroups.map((group) => (
+            <option key={group.id} value={group.id}>{group.name}</option>
+          ))}
+        </select>
+        <textarea name="content" value={noticeForm.content} onChange={onNoticeFormChange} placeholder="Notice content" rows={3} className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2" />
+        <input name="end_time" type="datetime-local" value={noticeForm.end_time} onChange={onNoticeFormChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <input name="remind_before_minutes" type="number" min="1" value={noticeForm.remind_before_minutes} onChange={onNoticeFormChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+      </div>
+      {noticePublishState?.message && (
+        <p className={`mt-3 text-sm ${noticePublishState.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
+          {noticePublishState.message}
+        </p>
+      )}
+      <button
+        onClick={onPublishNotice}
+        disabled={isPublishingNotice}
+        className="mt-4 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isPublishingNotice ? 'Publishing...' : 'Publish Notice'}
+      </button>
     </section>
   </div>
 );
@@ -335,8 +400,24 @@ const TeachersSearch = () => (
   </div>
 );
 
-const TeachersNoDues = ({ requests, onDecision }) => (
+const TeachersNoDues = ({ requests, onDecision, subjects, subjectForm, onSubjectFormChange, onCreateSubject }) => (
   <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+    <div className="mb-6 border border-gray-200 rounded-xl p-4 bg-gray-50">
+      <h3 className="text-lg font-semibold text-gray-900">Add No-Dues Subject</h3>
+      <p className="text-sm text-gray-500 mb-3">Create a subject clearance requirement for a specific class/department.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <input name="subject_name" value={subjectForm.subject_name} onChange={onSubjectFormChange} placeholder="Subject name" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <input name="department" value={subjectForm.department} onChange={onSubjectFormChange} placeholder="Department (e.g., CSE)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <input name="class_year" value={subjectForm.class_year} onChange={onSubjectFormChange} placeholder="Class year (e.g., 4)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <input name="semester" type="number" value={subjectForm.semester} onChange={onSubjectFormChange} placeholder="Semester" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <input name="description" value={subjectForm.description} onChange={onSubjectFormChange} placeholder="Description" className="rounded-lg border border-gray-300 px-3 py-2 text-sm lg:col-span-2" />
+      </div>
+      <button onClick={onCreateSubject} className="mt-3 px-4 py-2 text-sm font-semibold rounded-lg bg-gray-900 text-white hover:bg-black">Add Subject</button>
+      {subjects.length > 0 && (
+        <div className="mt-4 text-xs text-gray-600">Active subjects: {subjects.map((item) => item.subject_name).join(', ')}</div>
+      )}
+    </div>
+
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
       <div>
         <h3 className="text-xl font-semibold text-gray-900">Pending No-Dues</h3>
@@ -434,7 +515,7 @@ const TeachersTimetable = ({ schedule }) => (
   </div>
 );
 
-const TeachersProfileCard = ({ user, availability, onToggleAvailability }) => (
+const TeachersProfileCard = ({ user, availability, onToggleAvailability, onLogout }) => (
   <div className="absolute right-0 mt-3 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 text-gray-900">
     <div className="flex items-center gap-3">
       <div className="w-12 h-12 rounded-xl bg-gray-900 text-white flex items-center justify-center text-lg font-semibold">{user.initials}</div>
@@ -454,6 +535,13 @@ const TeachersProfileCard = ({ user, availability, onToggleAvailability }) => (
         {availability ? "Visible" : "On Leave"}
       </button>
     </div>
+    <button
+      onClick={onLogout}
+      className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-red-600 border border-red-200 hover:border-red-300 hover:bg-red-50 rounded-xl transition"
+    >
+      <LogoutIcon className="w-4 h-4" />
+      Logout
+    </button>
   </div>
 );
 
@@ -463,15 +551,73 @@ const navItems = [
   { key: "Search", icon: SearchIcon },
   { key: "Calendar", icon: CalendarIcon },
   { key: "No-Dues", icon: ClipboardIcon },
-  { key: "Timetable", icon: CalendarIcon }
+  { key: "Timetable", icon: CalendarIcon },
+  { key: "Settings", icon: SettingsIcon },
 ];
 
+const FacultySettingsPage = ({ user }) => {
+  const settingsKey = `campusmate_settings_${user?.role || 'faculty'}`;
+  const [settings, setSettings] = useState(() => {
+    try {
+      const stored = localStorage.getItem(settingsKey);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn('Failed to parse faculty settings', err);
+    }
+    return {
+      emailNotifications: true,
+      reminderAlerts: true,
+      autoOpenNoDues: false,
+      officeStatusVisible: true,
+    };
+  });
+  const [saved, setSaved] = useState(false);
+
+  const toggle = (key) => {
+    setSaved(false);
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const saveSettings = () => {
+    localStorage.setItem(settingsKey, JSON.stringify(settings));
+    setSaved(true);
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm max-w-3xl space-y-4">
+      <h3 className="text-xl font-semibold text-gray-900">Faculty Settings</h3>
+      <label className="flex items-center justify-between border border-gray-200 rounded-xl p-4">
+        <span className="text-sm font-medium text-gray-700">Email notifications</span>
+        <input type="checkbox" checked={settings.emailNotifications} onChange={() => toggle('emailNotifications')} className="h-5 w-5" />
+      </label>
+      <label className="flex items-center justify-between border border-gray-200 rounded-xl p-4">
+        <span className="text-sm font-medium text-gray-700">Reminder alerts</span>
+        <input type="checkbox" checked={settings.reminderAlerts} onChange={() => toggle('reminderAlerts')} className="h-5 w-5" />
+      </label>
+      <label className="flex items-center justify-between border border-gray-200 rounded-xl p-4">
+        <span className="text-sm font-medium text-gray-700">Auto-open no-dues panel on login</span>
+        <input type="checkbox" checked={settings.autoOpenNoDues} onChange={() => toggle('autoOpenNoDues')} className="h-5 w-5" />
+      </label>
+      <label className="flex items-center justify-between border border-gray-200 rounded-xl p-4">
+        <span className="text-sm font-medium text-gray-700">Show office availability to students</span>
+        <input type="checkbox" checked={settings.officeStatusVisible} onChange={() => toggle('officeStatusVisible')} className="h-5 w-5" />
+      </label>
+      <div className="flex items-center gap-3">
+        <button onClick={saveSettings} className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black">Save settings</button>
+        {saved && <span className="text-sm text-green-600">Saved successfully.</span>}
+      </div>
+    </div>
+  );
+};
+
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [activeNav, setActiveNav] = useState("Home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
   const [availability, setAvailability] = useState(true);
   const [calendarCursor, setCalendarCursor] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -480,17 +626,19 @@ const TeacherDashboard = () => {
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [conversationMessages, setConversationMessages] = useState({});
-  const [noDuesRequests, setNoDuesRequests] = useState([
-    { id: 1, name: "Anuj Patel", roll: "CSE21045", branch: "CSE", year: "4th", subject: "Library Clearance", status: "Pending", remark: "" },
-    { id: 2, name: "Sneha Iyer", roll: "ECE20112", branch: "ECE", year: "4th", subject: "Lab Equipment", status: "Approved", remark: "Cleared on 20 Jan" },
-    { id: 3, name: "Rahul Sen", roll: "CSE21067", branch: "CSE", year: "4th", subject: "Hostel", status: "Declined", remark: "Submit dues receipt" }
-  ]);
+  const [noDuesRequests, setNoDuesRequests] = useState([]);
+  const [noDuesSubjects, setNoDuesSubjects] = useState([]);
+  const [subjectForm, setSubjectForm] = useState({ subject_name: '', department: '', class_year: '', semester: '', description: '' });
+  const [facultyNotices, setFacultyNotices] = useState([]);
+  const [noticeForm, setNoticeForm] = useState({ title: '', content: '', target_group: '', end_time: '', remind_before_minutes: '30' });
+  const [isPublishingNotice, setIsPublishingNotice] = useState(false);
+  const [noticePublishState, setNoticePublishState] = useState({ type: '', message: '' });
   const [calendarEvents, setCalendarEvents] = useState([
     { id: 1, title: "Hackathon Briefing", date: "2026-02-02", time: "17:00", branch: "CSE", year: "3", description: "Orientation for Smart Campus Hackathon" },
     { id: 2, title: "Industry Talk", date: "2026-02-05", time: "11:00", branch: "ECE", year: "4", description: "AI in Communication Systems" },
     { id: 3, title: "Mid-term Review", date: "2026-02-12", time: "14:00", branch: "CSE", year: "4", description: "Project milestone evaluation" }
   ]);
-  const [timetable, setTimetable] = useState([
+  const [timetable] = useState([
     { time: "09:00 - 10:00", course: "AI Foundations", batch: "CSE 6th Sem • Room 304", type: "Lecture", note: "Lab on Thursday" },
     { time: "10:15 - 11:15", course: "Project Mentorship", batch: "Capstone Group A", type: "Mentoring", note: "Prototype review" },
     { time: "12:00 - 13:00", course: "Faculty Council", batch: "Staff Room", type: "Meeting", note: "Academic planning" },
@@ -502,6 +650,18 @@ const TeacherDashboard = () => {
       try {
         const token = localStorage.getItem("access_token") || localStorage.getItem("accessToken");
         const storedRole = localStorage.getItem("user_role");
+        
+        // Validate that the stored role is "faculty" for this dashboard
+        if (storedRole && storedRole !== "faculty") {
+          // Wrong user type logged in, redirect to correct dashboard
+          if (storedRole === "student") {
+            navigate("/dashboard");
+          } else if (storedRole === "admin") {
+            navigate("/dashboard");
+          }
+          return;
+        }
+        
         const fallbackUser = {
           name: localStorage.getItem("user_name") || "Faculty Member",
           email: localStorage.getItem("user_email") || "faculty@example.com",
@@ -518,6 +678,13 @@ const TeacherDashboard = () => {
         try {
           const response = await getProfile();
           const data = response.data || {};
+          
+          // Double-check the role from API matches expectations
+          if (data.role && data.role !== "faculty") {
+            navigate("/dashboard");
+            return;
+          }
+          
           const profileUser = {
             name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || data.email || fallbackUser.name,
             email: data.email || fallbackUser.email,
@@ -539,7 +706,23 @@ const TeacherDashboard = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [navigate]);
+
+  const handleLogout = () => {
+    // Clear all authentication tokens and user data from localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_department');
+    
+    // Redirect to login page
+    navigate('/faculty/login');
+  };
 
   // Fetch chat groups from backend API
   useEffect(() => {
@@ -596,6 +779,49 @@ const TeacherDashboard = () => {
     fetchChatData();
   }, []);
 
+  const refreshNoDuesData = async () => {
+    try {
+      const [subjectsRes, applicationsRes] = await Promise.all([
+        getNoDuesSubjects(),
+        getNoDuesApplications(),
+      ]);
+
+      setNoDuesSubjects(subjectsRes.data || []);
+
+      const normalizedRequests = (applicationsRes.data || []).map((app) => ({
+        id: app.id,
+        name: app.student_name || app.student?.email || 'Student',
+        roll: app.student || '-',
+        branch: app.subject?.department || '-',
+        year: app.subject?.class_year ? `${app.subject.class_year}th` : '-',
+        subject: app.subject?.subject_name || '-',
+        status: app.status === 'PENDING' ? 'Pending' : app.status === 'APPROVED' ? 'Approved' : 'Declined',
+        remark: app.remark || '',
+      }));
+      setNoDuesRequests(normalizedRequests);
+    } catch (err) {
+      console.warn('No-dues data fetch failed', err);
+    }
+  };
+
+  const refreshNotices = async () => {
+    try {
+      const res = await getFacultyNotices();
+      const rows = res.data || [];
+      setFacultyNotices(rows);
+    } catch (err) {
+      console.warn('Faculty notices fetch failed', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    refreshNoDuesData();
+    refreshNotices();
+  }, [user]);
+
   useEffect(() => {
     if (!activeConversationId && conversations.length > 0) {
       setActiveConversationId(conversations[0].id);
@@ -603,12 +829,13 @@ const TeacherDashboard = () => {
   }, [activeConversationId, conversations]);
 
   const notices = useMemo(
-    () => [
-      { id: 1, title: "Exam invigilation roster published", timestamp: "Updated 25 Jan, 18:30", category: "Assessment" },
-      { id: 2, title: "Research proposal submissions due 31 Jan", timestamp: "Updated 24 Jan, 12:10", category: "Research" },
-      { id: 3, title: "Faculty development workshop registration", timestamp: "Updated 22 Jan, 09:05", category: "Development" }
-    ],
-    []
+    () => facultyNotices.map((notice) => ({
+      id: notice.id,
+      title: notice.title,
+      timestamp: notice.end_time ? `Ends ${new Date(notice.end_time).toLocaleString()}` : new Date(notice.created_at).toLocaleString(),
+      category: notice.target_audience || 'all',
+    })),
+    [facultyNotices]
   );
 
   const events = useMemo(
@@ -630,7 +857,102 @@ const TeacherDashboard = () => {
   );
 
   const handleNoDuesDecision = (id, status, remark) => {
-    setNoDuesRequests((prev) => prev.map((request) => (request.id === id ? { ...request, status, remark } : request)));
+    const mappedStatus = status === 'Approved' ? 'APPROVED' : status === 'Declined' ? 'REJECTED' : 'PENDING';
+    reviewNoDuesApplication(id, { status: mappedStatus, remark })
+      .then(() => refreshNoDuesData())
+      .catch((err) => console.warn('No-dues review failed', err));
+  };
+
+  const handleSubjectFormChange = (event) => {
+    const { name, value } = event.target;
+    setSubjectForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateSubject = async () => {
+    if (!subjectForm.subject_name || !subjectForm.department) {
+      return;
+    }
+
+    try {
+      await createNoDuesSubject({
+        subject_name: subjectForm.subject_name,
+        department: subjectForm.department,
+        class_year: subjectForm.class_year || null,
+        semester: subjectForm.semester ? Number(subjectForm.semester) : null,
+        description: subjectForm.description,
+      });
+      setSubjectForm({ subject_name: '', department: '', class_year: '', semester: '', description: '' });
+      refreshNoDuesData();
+    } catch (err) {
+      console.warn('No-dues subject creation failed', err);
+    }
+  };
+
+  const handleNoticeFormChange = (event) => {
+    const { name, value } = event.target;
+    setNoticeForm((prev) => ({ ...prev, [name]: value }));
+    if (noticePublishState.message) {
+      setNoticePublishState({ type: '', message: '' });
+    }
+  };
+
+  const handlePublishNotice = async () => {
+    if (!noticeForm.title.trim() || !noticeForm.content.trim()) {
+      setNoticePublishState({ type: 'error', message: 'Title and content are required.' });
+      return;
+    }
+
+    if (!noticeForm.target_group) {
+      setNoticePublishState({ type: 'error', message: 'Please select a target chat group.' });
+      return;
+    }
+
+    if (!noticeForm.end_time) {
+      setNoticePublishState({ type: 'error', message: 'Please choose an end time for auto-reminder.' });
+      return;
+    }
+
+    const remindBefore = Number(noticeForm.remind_before_minutes || 30);
+    if (!Number.isFinite(remindBefore) || remindBefore < 1) {
+      setNoticePublishState({ type: 'error', message: 'Reminder minutes must be at least 1.' });
+      return;
+    }
+
+    try {
+      setIsPublishingNotice(true);
+      setNoticePublishState({ type: '', message: '' });
+
+      // datetime-local returns local wall time; convert to ISO for DRF DateTimeField.
+      const endTimeIso = new Date(noticeForm.end_time).toISOString();
+
+      await createFacultyNotice({
+        title: noticeForm.title.trim(),
+        content: noticeForm.content.trim(),
+        target_audience: 'student',
+        target_group: Number(noticeForm.target_group),
+        end_time: endTimeIso,
+        remind_before_minutes: remindBefore,
+      });
+      setNoticeForm({ title: '', content: '', target_group: '', end_time: '', remind_before_minutes: '30' });
+      await refreshNotices();
+      setNoticePublishState({ type: 'success', message: 'Notice published successfully.' });
+    } catch (err) {
+      console.warn('Notice publish failed', err);
+      const fieldErrors = err?.response?.data && typeof err.response.data === 'object'
+        ? Object.entries(err.response.data)
+            .map(([field, value]) => `${field}: ${Array.isArray(value) ? value.join(', ') : value}`)
+            .join(' | ')
+        : '';
+      const serverMessage =
+        err?.response?.data?.detail ||
+        err?.response?.data?.error ||
+        fieldErrors ||
+        (typeof err?.response?.data === 'string' ? err.response.data : '') ||
+        'Failed to publish notice. Please check your fields and try again.';
+      setNoticePublishState({ type: 'error', message: serverMessage });
+    } finally {
+      setIsPublishingNotice(false);
+    }
   };
 
   const handleCalendarFormChange = (event) => {
@@ -701,7 +1023,19 @@ const TeacherDashboard = () => {
   const renderPage = () => {
     switch (activeNav) {
       case "Home":
-        return <TeachersHome notices={notices} events={events} insights={insights} />;
+        return (
+          <TeachersHome
+            notices={notices}
+            events={events}
+            insights={insights}
+            noticeForm={noticeForm}
+            onNoticeFormChange={handleNoticeFormChange}
+            onPublishNotice={handlePublishNotice}
+            noticeGroups={conversations}
+            noticePublishState={noticePublishState}
+            isPublishingNotice={isPublishingNotice}
+          />
+        );
       case "Messages":
         return (
           <SharedMessagesPage
@@ -733,9 +1067,20 @@ const TeacherDashboard = () => {
           />
         );
       case "No-Dues":
-        return <TeachersNoDues requests={noDuesRequests} onDecision={handleNoDuesDecision} />;
+        return (
+          <TeachersNoDues
+            requests={noDuesRequests}
+            onDecision={handleNoDuesDecision}
+            subjects={noDuesSubjects}
+            subjectForm={subjectForm}
+            onSubjectFormChange={handleSubjectFormChange}
+            onCreateSubject={handleCreateSubject}
+          />
+        );
       case "Timetable":
         return <TeachersTimetable schedule={timetable} />;
+      case "Settings":
+        return <FacultySettingsPage user={user} />;
       default:
         return <TeachersHome notices={notices} events={events} insights={insights} />;
     }
@@ -795,6 +1140,7 @@ const TeacherDashboard = () => {
                 user={user}
                 availability={availability}
                 onToggleAvailability={() => setAvailability((prev) => !prev)}
+                onLogout={handleLogout}
               />
             )}
           </div>

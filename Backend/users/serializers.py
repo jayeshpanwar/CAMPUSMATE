@@ -8,7 +8,7 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import User
+from .models import User, NoDuesSubject, NoDuesApplication
 
 
 def _generate_unique_username(email):
@@ -181,3 +181,58 @@ class AdminRegisterSerializer(PasswordConfirmationSerializer):
             **validated_data
         )
         return user
+
+
+class NoDuesSubjectSerializer(serializers.ModelSerializer):
+    faculty_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = NoDuesSubject
+        fields = [
+            'id',
+            'subject_name',
+            'department',
+            'class_year',
+            'semester',
+            'description',
+            'is_active',
+            'created_at',
+            'updated_at',
+            'faculty',
+            'faculty_name',
+        ]
+        read_only_fields = ['faculty', 'created_at', 'updated_at']
+
+    def get_faculty_name(self, obj):
+        full_name = obj.faculty.get_full_name()
+        return full_name if full_name else obj.faculty.email
+
+
+class NoDuesApplicationSerializer(serializers.ModelSerializer):
+    subject = NoDuesSubjectSerializer(read_only=True)
+    subject_id = serializers.PrimaryKeyRelatedField(
+        queryset=NoDuesSubject.objects.filter(is_active=True),
+        source='subject',
+        write_only=True,
+    )
+    student_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = NoDuesApplication
+        fields = [
+            'id',
+            'subject',
+            'subject_id',
+            'student',
+            'student_name',
+            'status',
+            'remark',
+            'applied_at',
+            'reviewed_at',
+            'reviewed_by',
+        ]
+        read_only_fields = ['student', 'applied_at', 'reviewed_at', 'reviewed_by']
+
+    def get_student_name(self, obj):
+        full_name = obj.student.get_full_name()
+        return full_name if full_name else obj.student.email

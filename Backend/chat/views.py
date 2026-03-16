@@ -13,6 +13,7 @@ from .serializers import (
     GroupMembershipSerializer
 )
 from users.models import User
+from notices.services import dispatch_due_reminders
 
 
 class ChatGroupViewSet(viewsets.ModelViewSet):
@@ -29,6 +30,7 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Return groups that the user is a member of."""
+        dispatch_due_reminders()
         return ChatGroup.objects.filter(
             memberships__user=self.request.user,
             is_active=True
@@ -89,6 +91,7 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
         """Get all messages in a chat group."""
+        dispatch_due_reminders()
         group = self.get_object()
         
         # Verify user is member of group

@@ -59,3 +59,48 @@ class DepartmentConfig(models.Model):
     
     def __str__(self):
         return f"{self.branch} - Sem {self.semester} - {self.subject_name}"
+
+
+class NoDuesSubject(models.Model):
+    """Faculty-created no-dues subjects visible to filtered student groups."""
+
+    faculty = models.ForeignKey(User, on_delete=models.CASCADE, related_name='no_dues_subjects')
+    subject_name = models.CharField(max_length=255)
+    department = models.CharField(max_length=100)
+    class_year = models.CharField(max_length=20, blank=True, null=True)
+    semester = models.IntegerField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.subject_name} ({self.department})"
+
+
+class NoDuesApplication(models.Model):
+    """Student application against a faculty-created no-dues subject."""
+
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    )
+
+    subject = models.ForeignKey(NoDuesSubject, on_delete=models.CASCADE, related_name='applications')
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='no_dues_applications')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    remark = models.TextField(blank=True, null=True)
+    applied_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_no_dues_applications')
+
+    class Meta:
+        unique_together = ('subject', 'student')
+        ordering = ['-applied_at']
+
+    def __str__(self):
+        return f"{self.student.email} -> {self.subject.subject_name} ({self.status})"

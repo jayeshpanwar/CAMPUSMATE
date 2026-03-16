@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   MainContainer,
   ChatContainer,
@@ -24,6 +24,8 @@ function ChatComponentAdvanced() {
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const pollingIntervalRef = useRef(null);
 
   const userId = localStorage.getItem("user_id");
   const userName = localStorage.getItem("user_name");
@@ -33,39 +35,83 @@ function ChatComponentAdvanced() {
     fetchConversations();
   }, []);
 
+  // Set up message polling when conversation is selected
+  useEffect(() => {
+    if (selectedConversation) {
+      // Fetch messages immediately
+      fetchMessagesForConversation(selectedConversation.id);
+      
+      // Set up polling interval to fetch new messages every 2 seconds
+      pollingIntervalRef.current = setInterval(() => {
+        fetchMessagesForConversation(selectedConversation.id);
+      }, 2000);
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [selectedConversation]);
+
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      // Replace with your actual API endpoint
-      const response = await apiClient.get("/chat/conversations/");
-      setConversations(response.data || []);
-      if (response.data && response.data.length > 0) {
-        setSelectedConversation(response.data[0]);
+      const response = await apiClient.get("/chat/groups/");
+      const groupsData = response.data || [];
+      
+      // Map groups to conversation format
+      const formattedConversations = groupsData.map(group => ({
+        id: group.id,
+        name: group.name,
+        description: group.description || "",
+        avatar: "👥",
+        messages: [],
+        participants: group.memberships ? group.memberships.length : 0,
+      }));
+      
+      setConversations(formattedConversations);
+      if (formattedConversations.length > 0) {
+        setSelectedConversation(formattedConversations[0]);
       }
     } catch (err) {
       console.error("Error fetching conversations:", err);
       setError("Failed to load conversations");
-      // Mock data for demo
-      setConversations([
-        {
-          id: 1,
-          name: "Campus Support",
-          description: "Official campus help desk",
-          avatar: "👨‍💼",
-          messages: [],
-          participants: 2,
-        },
-        {
-          id: 2,
-          name: "Computer Science Batch 2024",
-          description: "Class discussion group",
-          avatar: "👨‍🎓",
-          messages: [],
-          participants: 45,
-        },
-      ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMessagesForConversation = async (conversationId) => {
+    try {
+      setMessagesLoading(true);
+      const response = await apiClient.get(`/chat/groups/${conversationId}/messages/`);
+      const messagesData = response.data || [];
+      
+      // Format messages for the UI
+      const formattedMessages = messagesData.map(msg => ({
+        id: msg.id,
+        sender: msg.sender_name || msg.sender,
+        direction: msg.sender_id === parseInt(userId) ? "outgoing" : "incoming",
+        position: "single",
+        text: msg.content,
+        timestamp: msg.created_at,
+      }));
+      
+      // Update the selected conversation with messages
+      setSelectedConversation(prev => {
+        if (prev && prev.id === conversationId) {
+          return {
+            ...prev,
+            messages: formattedMessages,
+          };
+        }
+        return prev;
+      });
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -73,35 +119,26 @@ function ChatComponentAdvanced() {
     if (messageInput.trim() === "" || !selectedConversation) return;
 
     try {
-      // Add optimistic message
-      const newMessage = {
-        id: Date.now(),
-        sender: userName || "You",
-        direction: "outgoing",
-        position: "single",
-        text: messageInput,
-        timestamp: new Date().toISOString(),
-      };
-
-      setSelectedConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, newMessage],
-      }));
-
+      const messageContent = messageInput;
       setMessageInput("");
       setIsTyping(true);
 
-      // Send to backend
-      await apiClient.post(`/chat/send/`, {
-        conversation_id: selectedConversation.id,
-        message: messageInput,
-      });
+      // Send message to backend
+      const response = await apiClient.post(
+        `/chat/groups/${selectedConversation.id}/send_message/`,
+        { content: messageContent }
+      );
 
+      // After sending, fetch updated messages
+      await fetchMessagesForConversation(selectedConversation.id);
+      
       setIsTyping(false);
     } catch (err) {
       console.error("Error sending message:", err);
       setError("Failed to send message");
       setIsTyping(false);
+      // Re-add the message to input if send failed
+      setMessageInput(messageInput);
     }
   };
 

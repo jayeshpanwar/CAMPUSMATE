@@ -13,14 +13,15 @@ class Notice(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # Optional: Link to the user who created it
-    # created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_notices')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_notices')
 
     # Optional: Target audience for the notice
     target_audience = models.CharField(max_length=20, choices=ROLE_CHOICES, default='all')
 
-    # Optional: Expiry date for the notice
-    # expiry_date = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    remind_before_minutes = models.PositiveIntegerField(default=30)
+    reminder_sent = models.BooleanField(default=False)
+    target_group = models.ForeignKey('chat.ChatGroup', on_delete=models.SET_NULL, null=True, blank=True, related_name='notices')
 
     def __str__(self):
         return self.title

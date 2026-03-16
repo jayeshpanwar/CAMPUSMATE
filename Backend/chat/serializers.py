@@ -11,10 +11,18 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
+    sender_name = serializers.SerializerMethodField()
+    sender_id = serializers.IntegerField(source='sender.id', read_only=True)
     
     class Meta:
         model = ChatMessage
-        fields = ['id', 'sender', 'content', 'created_at']
+        fields = ['id', 'sender', 'sender_name', 'sender_id', 'content', 'created_at']
+    
+    def get_sender_name(self, obj):
+        if obj.sender:
+            full_name = obj.sender.get_full_name()
+            return full_name if full_name else obj.sender.email
+        return 'Unknown'
 
 
 class GroupMembershipSerializer(serializers.ModelSerializer):
@@ -43,10 +51,11 @@ class ChatGroupListSerializer(serializers.ModelSerializer):
     member_count = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
     created_by = UserSerializer(read_only=True)
+    memberships = GroupMembershipSerializer(many=True, read_only=True)
     
     class Meta:
         model = ChatGroup
-        fields = ['id', 'name', 'description', 'created_by', 'created_at', 'updated_at', 'member_count', 'last_message']
+        fields = ['id', 'name', 'description', 'created_by', 'created_at', 'updated_at', 'member_count', 'memberships', 'last_message']
     
     def get_member_count(self, obj):
         return obj.memberships.count()
