@@ -13,6 +13,7 @@ import AdminSignup from './components/AdminSignup';
 import Dashboard from './components/Dashboard';
 import TeacherDashboard from './components/TeacherDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import StudyPlanPage from './components/StudyPlanPage';
 
 function App() {
   return (
@@ -79,6 +80,19 @@ function AppRoutes() {
 
       {/* Default redirect to the student login page */}
       <Route path="*" element={<Navigate to="/student/login" />} />
+
+          {/* Study Plan Route */}
+          <Route
+            path="/study-plan"
+            element={
+              <ProtectedRoute>
+                <StudyPlanPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Default redirect to the student login page */}
+          <Route path="*" element={<Navigate to="/student/login" />} />
     </Routes>
   );
 }

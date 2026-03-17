@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient, { getProfile, getChatGroups, getGroupMessages, getNoDuesSubjects, getNoDuesApplications, applyNoDues } from "./api";
+import apiClient, { getProfile, getChatGroups, getGroupMessages, getNoDuesSubjects, getNoDuesApplications, applyNoDues, getMyMarks } from "./api";
 import SharedMessagesPage from './SharedMessagesPage';
 
 // --- Icon Components ---
@@ -49,6 +49,10 @@ const CheckCircleIcon = ({ className }) => (
 );
 const ClockIcon = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+
+const SparklesNavIcon = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>
 );
 
 const hackathonShowcase = [
@@ -1137,6 +1141,10 @@ const Dashboard = () => {
     const [activeNav, setActiveNav] = useState('Dashboard');
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const profilePanelRef = useRef(null);
+    const [mstMarksData, setMstMarksData] = useState([]);
+    const [mstMarksLoading, setMstMarksLoading] = useState(false);
+    const [mstMarksError, setMstMarksError] = useState('');
+    const [mstSemesterFilter, setMstSemesterFilter] = useState('');
 
     // --- MESSAGING STATE ---
     const [conversations, setConversations] = useState([]);
@@ -1344,6 +1352,25 @@ const Dashboard = () => {
         }
     }, [activeNav]);
 
+    useEffect(() => {
+        const fetchMstMarks = async () => {
+            if (activeNav !== 'MST Marks') {
+                return;
+            }
+            setMstMarksLoading(true);
+            setMstMarksError('');
+            try {
+                const response = await getMyMarks(mstSemesterFilter.trim());
+                setMstMarksData(response.data?.entries || []);
+            } catch (marksError) {
+                setMstMarksError(marksError?.response?.data?.error || 'Could not load MST marks.');
+            } finally {
+                setMstMarksLoading(false);
+            }
+        };
+        fetchMstMarks();
+    }, [activeNav, mstSemesterFilter]);
+
     // --- REAL-TIME WEBSOCKET LOGIC (Skipped for brevity, same as yours) ---
     // ...
 
@@ -1426,20 +1453,26 @@ const Dashboard = () => {
     if (isLoading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600"></div></div>;
     if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-center"><div><h2 className="text-2xl font-bold text-red-600">An Error Occurred</h2><p className="text-gray-600 mt-2">{error}</p></div></div>;
     
-    // 📝 UPDATED NAV ITEMS
     const navItems = [
         { name: 'Dashboard', icon: HomeIcon },
         { name: 'Tasks', icon: ClipboardIcon }, 
+        { name: 'MST Marks', icon: ClipboardIcon },
         { name: 'Messages', icon: MessageSquareIcon },
         { name: 'Search', icon: SearchIcon },
         { name: 'Calendar', icon: CalendarIcon },
-        { name: 'No-Dues', icon: FileTextIcon }, // Added No-Dues
+        { name: 'No-Dues', icon: FileTextIcon },
+        { name: 'Study Plan', icon: SparklesNavIcon },
     ];
 
     const handleNavClick = (navItem) => {
+        if (navItem === 'Study Plan') {
+            navigate('/study-plan');
+            setIsSidebarOpen(false);
+            return;
+        }
         setActiveNav(navItem);
-        setIsSidebarOpen(false); 
-    }
+        setIsSidebarOpen(false);
+    };
 
     const handleAddStudentTask = ({ title, dueDate, notes }) => {
         const createdAt = new Date();
@@ -1507,6 +1540,58 @@ const Dashboard = () => {
                         onToggleTeacherTask={handleToggleTeacherTask}
                         onClearCompletedStudentTasks={handleClearCompletedStudentTasks}
                     />
+                );
+            case 'MST Marks':
+                return (
+                    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-5">
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900">My MST Marks</h3>
+                                <p className="text-sm text-gray-500">View all MST marks entered by faculty (out of 20).</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    value={mstSemesterFilter}
+                                    onChange={(event) => setMstSemesterFilter(event.target.value)}
+                                    placeholder="Filter semester (e.g., Sem 4)"
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        {mstMarksError && <p className="text-sm text-red-600 mb-3">{mstMarksError}</p>}
+
+                        {mstMarksLoading ? (
+                            <div className="py-10 text-sm text-gray-500">Loading marks...</div>
+                        ) : mstMarksData.length === 0 ? (
+                            <div className="py-10 text-sm text-gray-500">No MST marks found for the selected semester.</div>
+                        ) : (
+                            <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead className="bg-gray-50 text-gray-600">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-medium">Subject</th>
+                                            <th className="px-4 py-3 text-left font-medium">Semester</th>
+                                            <th className="px-4 py-3 text-left font-medium">Marks</th>
+                                            <th className="px-4 py-3 text-left font-medium">Entered By</th>
+                                            <th className="px-4 py-3 text-left font-medium">Updated</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 text-gray-700">
+                                        {mstMarksData.map((entry) => (
+                                            <tr key={entry.id}>
+                                                <td className="px-4 py-3 font-medium text-gray-900">{entry.subject}</td>
+                                                <td className="px-4 py-3">{entry.semester}</td>
+                                                <td className="px-4 py-3">{entry.marks}/{entry.max_marks}</td>
+                                                <td className="px-4 py-3">{entry.entered_by_email || 'Faculty'}</td>
+                                                <td className="px-4 py-3">{new Date(entry.updated_at).toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 );
             case 'Messages':
                 return <MessagesPage conversations={conversations} setConversations={setConversations} allMessages={allMessages} setAllMessages={setAllMessages} allUsers={allUsers} currentUser={user} />;

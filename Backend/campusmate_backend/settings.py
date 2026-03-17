@@ -3,9 +3,13 @@
 from pathlib import Path
 from datetime import timedelta # Import this
 import os
+import sys
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BASE_DIR.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 SECRET_KEY = 'django-insecure-your-secret-key-goes-here'
 DEBUG = True
 ALLOWED_HOSTS = []
@@ -28,8 +32,14 @@ INSTALLED_APPS = [
     'testapp',
     'chat',
     'notices',
+    'marks.apps.MarksConfig',
     
 ]
+
+# Gemini API key (set via environment variable)
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+STUDY_PLAN_MODEL_PATH = os.getenv('STUDY_PLAN_MODEL_PATH', str(PROJECT_ROOT / 'AI' / 'models' / 'study_plan_allocator.joblib'))
+USE_LOCAL_STUDY_PLAN_MODEL = os.getenv('USE_LOCAL_STUDY_PLAN_MODEL', 'True') == 'True'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

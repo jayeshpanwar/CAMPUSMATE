@@ -216,4 +216,46 @@ export const reviewNoDuesApplication = (applicationId, payload) => {
   return apiClient.patch(`no-dues/applications/${applicationId}/decision/`, payload);
 };
 
+// --- MARKS & STUDY PLAN CALLS ---
+
+/** Analyze mid-sem marks → returns analysis + draft study_plan_id */
+export const analyzeMidSemMarks = (payload) =>
+  apiClient.post('marks/analyze/', payload);
+
+/** Generate Gemini 6-week study plan (pass study_plan_id or inline marks) */
+export const generateStudyPlan = (payload) =>
+  apiClient.post('marks/generate-study-plan/', payload);
+
+/** List all study plans belonging to the current student */
+export const getMyStudyPlans = () =>
+  apiClient.get('marks/my-plans/');
+
+/** Get a single study plan by id */
+export const getStudyPlan = (id) =>
+  apiClient.get(`marks/plan/${id}/`);
+
+/** Delete a study plan */
+export const deleteStudyPlan = (id) =>
+  apiClient.delete(`marks/plan/${id}/`);
+
+/** Toggle a task checkbox (task_key + completed boolean) */
+export const updateTaskProgress = (planId, taskKey, completed) =>
+  apiClient.patch(`marks/plan/${planId}/progress/`, { task_key: taskKey, completed });
+
+/** Faculty: enter a student's marks */
+export const enterStudentMarks = (payload) =>
+  apiClient.post('marks/faculty/enter/', payload);
+
+/** Faculty: bulk upload marks */
+export const bulkEnterStudentMarks = (entries) =>
+  apiClient.post('marks/faculty/bulk-enter/', { entries });
+
+/** Faculty: list students for marks entry */
+export const getFacultyStudents = () =>
+  apiClient.get('marks/faculty/students/');
+
+/** Student: retrieve their raw marks entries (optionally filter by semester) */
+export const getMyMarks = (semester = '') =>
+  apiClient.get('marks/my-marks/', { params: semester ? { semester } : {} });
+
 export default apiClient;

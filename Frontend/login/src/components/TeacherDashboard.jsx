@@ -10,6 +10,9 @@ import {
   createNoDuesSubject,
   getNoDuesApplications,
   reviewNoDuesApplication,
+  getFacultyStudents,
+  enterStudentMarks,
+  bulkEnterStudentMarks,
 } from "./api";
 import SharedMessagesPage from './SharedMessagesPage';
 
@@ -515,6 +518,146 @@ const TeachersTimetable = ({ schedule }) => (
   </div>
 );
 
+const TeachersMstMarks = ({
+  students,
+  marksForm,
+  onMarksFormChange,
+  onSubmitMarks,
+  isSubmitting,
+  submitState,
+  bulkFileName,
+  bulkPreview,
+  bulkState,
+  bulkFailedRows,
+  isBulkSubmitting,
+  onBulkFileChange,
+  onDownloadTemplate,
+  onSubmitBulkMarks,
+}) => (
+  <div className="space-y-6">
+    <section className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      <h3 className="text-xl font-semibold text-gray-900">Enter MST Marks</h3>
+      <p className="text-sm text-gray-500 mt-1">Faculty can submit student MST marks out of 20. Students can view them in their dashboard.</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <select name="student_id" value={marksForm.student_id} onChange={onMarksFormChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <option value="">Select student</option>
+          {students.map((student) => (
+            <option key={student.id} value={student.id}>{student.display_name} ({student.email})</option>
+          ))}
+        </select>
+        <input name="subject" value={marksForm.subject} onChange={onMarksFormChange} placeholder="Subject (e.g., Mathematics)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <input name="semester" value={marksForm.semester} onChange={onMarksFormChange} placeholder="Semester (e.g., Sem 4)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        <input name="marks" type="number" min="0" max="20" step="0.5" value={marksForm.marks} onChange={onMarksFormChange} placeholder="Marks out of 20" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+      </div>
+
+      {submitState?.message && (
+        <p className={`mt-3 text-sm ${submitState.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{submitState.message}</p>
+      )}
+
+      <button onClick={onSubmitMarks} disabled={isSubmitting} className="mt-4 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed">
+        {isSubmitting ? 'Submitting...' : 'Submit MST Marks'}
+      </button>
+    </section>
+
+    <section className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      <h3 className="text-lg font-semibold text-gray-900">Bulk Upload via CSV</h3>
+      <p className="text-sm text-gray-500 mt-1">Upload a CSV with headers: student_id,subject,semester,marks. Optional: max_marks (defaults to 20).</p>
+
+      <div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
+        <button onClick={onDownloadTemplate} className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+          Download CSV Template
+        </button>
+        <input type="file" accept=".csv" onChange={onBulkFileChange} className="text-sm" />
+        <span className="text-xs text-gray-500">{bulkFileName || 'No file selected'}</span>
+      </div>
+
+      {bulkState?.message && (
+        <p className={`mt-3 text-sm ${bulkState.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{bulkState.message}</p>
+      )}
+
+      {bulkPreview.length > 0 && (
+        <div className="mt-4 border border-gray-200 rounded-xl overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">Student ID</th>
+                <th className="px-4 py-3 text-left font-medium">Subject</th>
+                <th className="px-4 py-3 text-left font-medium">Semester</th>
+                <th className="px-4 py-3 text-left font-medium">Marks</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 text-gray-700">
+              {bulkPreview.slice(0, 8).map((row, idx) => (
+                <tr key={`preview-${idx}`}>
+                  <td className="px-4 py-3">{row.student_id}</td>
+                  <td className="px-4 py-3">{row.subject}</td>
+                  <td className="px-4 py-3">{row.semester}</td>
+                  <td className="px-4 py-3">{row.marks}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {bulkPreview.length > 8 && <p className="px-4 py-2 text-xs text-gray-500">Showing first 8 rows of {bulkPreview.length} parsed rows.</p>}
+        </div>
+      )}
+
+      <button onClick={onSubmitBulkMarks} disabled={isBulkSubmitting || bulkPreview.length === 0} className="mt-4 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed">
+        {isBulkSubmitting ? 'Uploading...' : 'Upload Bulk Marks'}
+      </button>
+
+      {bulkFailedRows.length > 0 && (
+        <div className="mt-4 border border-red-200 rounded-xl overflow-x-auto">
+          <div className="px-4 py-3 bg-red-50 border-b border-red-200 text-sm font-semibold text-red-700">
+            Failed Rows ({bulkFailedRows.length})
+          </div>
+          <table className="min-w-full text-sm">
+            <thead className="bg-red-50/60 text-red-700">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">Row</th>
+                <th className="px-4 py-3 text-left font-medium">Error</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-red-100 text-red-700">
+              {bulkFailedRows.map((row, idx) => (
+                <tr key={`failed-${idx}`}>
+                  <td className="px-4 py-3">{row.row}</td>
+                  <td className="px-4 py-3">{row.error}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+
+    <section className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      <h4 className="text-lg font-semibold text-gray-900">Students Available</h4>
+      <p className="text-sm text-gray-500 mt-1">{students.length} students loaded for quick marks entry.</p>
+      <div className="mt-4 max-h-72 overflow-y-auto border border-gray-200 rounded-xl">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-gray-600">
+            <tr>
+              <th className="px-4 py-3 text-left font-medium">Name</th>
+              <th className="px-4 py-3 text-left font-medium">Email</th>
+              <th className="px-4 py-3 text-left font-medium">Department</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 text-gray-700">
+            {students.map((student) => (
+              <tr key={`student-${student.id}`}>
+                <td className="px-4 py-3">{student.display_name}</td>
+                <td className="px-4 py-3">{student.email}</td>
+                <td className="px-4 py-3">{student.department || '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+);
+
 const TeachersProfileCard = ({ user, availability, onToggleAvailability, onLogout }) => (
   <div className="absolute right-0 mt-3 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 text-gray-900">
     <div className="flex items-center gap-3">
@@ -548,6 +691,7 @@ const TeachersProfileCard = ({ user, availability, onToggleAvailability, onLogou
 const navItems = [
   { key: "Home", icon: HomeIcon },
   { key: "Messages", icon: MessageIcon },
+  { key: "MST Marks", icon: ClipboardIcon },
   { key: "Search", icon: SearchIcon },
   { key: "Calendar", icon: CalendarIcon },
   { key: "No-Dues", icon: ClipboardIcon },
@@ -633,6 +777,15 @@ const TeacherDashboard = () => {
   const [noticeForm, setNoticeForm] = useState({ title: '', content: '', target_group: '', end_time: '', remind_before_minutes: '30' });
   const [isPublishingNotice, setIsPublishingNotice] = useState(false);
   const [noticePublishState, setNoticePublishState] = useState({ type: '', message: '' });
+  const [students, setStudents] = useState([]);
+  const [isSubmittingMarks, setIsSubmittingMarks] = useState(false);
+  const [marksSubmitState, setMarksSubmitState] = useState({ type: '', message: '' });
+  const [marksForm, setMarksForm] = useState({ student_id: '', subject: '', semester: '', marks: '' });
+  const [bulkMarksRows, setBulkMarksRows] = useState([]);
+  const [bulkFailedRows, setBulkFailedRows] = useState([]);
+  const [bulkFileName, setBulkFileName] = useState('');
+  const [bulkState, setBulkState] = useState({ type: '', message: '' });
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState([
     { id: 1, title: "Hackathon Briefing", date: "2026-02-02", time: "17:00", branch: "CSE", year: "3", description: "Orientation for Smart Campus Hackathon" },
     { id: 2, title: "Industry Talk", date: "2026-02-05", time: "11:00", branch: "ECE", year: "4", description: "AI in Communication Systems" },
@@ -707,6 +860,147 @@ const TeacherDashboard = () => {
 
     fetchProfile();
   }, [navigate]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await getFacultyStudents();
+        setStudents(response.data || []);
+      } catch (error) {
+        console.warn('Failed to load students for MST marks entry', error);
+      }
+    };
+    fetchStudents();
+  }, []);
+
+  const handleMarksFormChange = (event) => {
+    const { name, value } = event.target;
+    setMarksSubmitState({ type: '', message: '' });
+    setMarksForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitMstMarks = async () => {
+    if (!marksForm.student_id || !marksForm.subject || !marksForm.semester || marksForm.marks === '') {
+      setMarksSubmitState({ type: 'error', message: 'Please fill student, subject, semester, and marks.' });
+      return;
+    }
+
+    setIsSubmittingMarks(true);
+    try {
+      await enterStudentMarks({
+        student_id: Number(marksForm.student_id),
+        subject: marksForm.subject,
+        semester: marksForm.semester,
+        marks: Number(marksForm.marks),
+        max_marks: 20,
+      });
+      setMarksSubmitState({ type: 'success', message: 'MST marks submitted successfully.' });
+      setMarksForm((prev) => ({ ...prev, subject: '', marks: '' }));
+    } catch (error) {
+      const apiError = error?.response?.data?.error || 'Failed to submit marks.';
+      setMarksSubmitState({ type: 'error', message: apiError });
+    } finally {
+      setIsSubmittingMarks(false);
+    }
+  };
+
+  const handleBulkFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setBulkFileName(file.name);
+    setBulkState({ type: '', message: '' });
+    setBulkFailedRows([]);
+
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      if (lines.length < 2) {
+        setBulkMarksRows([]);
+        setBulkFailedRows([]);
+        setBulkState({ type: 'error', message: 'CSV must include header and at least one data row.' });
+        return;
+      }
+
+      const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+      const required = ['student_id', 'subject', 'semester', 'marks'];
+      const missing = required.filter((key) => !headers.includes(key));
+      if (missing.length > 0) {
+        setBulkMarksRows([]);
+        setBulkFailedRows([]);
+        setBulkState({ type: 'error', message: `Missing required CSV headers: ${missing.join(', ')}` });
+        return;
+      }
+
+      const indexOf = (key) => headers.indexOf(key);
+      const parsedRows = [];
+      for (let i = 1; i < lines.length; i += 1) {
+        const cols = lines[i].split(',').map((c) => c.trim());
+        const row = {
+          student_id: Number(cols[indexOf('student_id')]),
+          subject: cols[indexOf('subject')] || '',
+          semester: cols[indexOf('semester')] || '',
+          marks: Number(cols[indexOf('marks')]),
+          max_marks: headers.includes('max_marks') ? Number(cols[indexOf('max_marks')] || 20) : 20,
+        };
+        if (!row.student_id || !row.subject || !row.semester || Number.isNaN(row.marks)) {
+          continue;
+        }
+        parsedRows.push(row);
+      }
+
+      setBulkMarksRows(parsedRows);
+      setBulkFailedRows([]);
+      setBulkState({ type: 'success', message: `Parsed ${parsedRows.length} rows from CSV.` });
+    } catch (error) {
+      setBulkMarksRows([]);
+      setBulkFailedRows([]);
+      setBulkState({ type: 'error', message: 'Unable to parse CSV file.' });
+    }
+  };
+
+  const handleDownloadBulkTemplate = () => {
+    const template = [
+      'student_id,subject,semester,marks,max_marks',
+      '5,Mathematics,Sem 4,13,20',
+      '12,Physics,Sem 4,16.5,20',
+    ].join('\n');
+
+    const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'mst_marks_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSubmitBulkMarks = async () => {
+    if (bulkMarksRows.length === 0) {
+      setBulkState({ type: 'error', message: 'Please upload a valid CSV first.' });
+      return;
+    }
+
+    setIsBulkSubmitting(true);
+    try {
+      const response = await bulkEnterStudentMarks(bulkMarksRows);
+      const data = response.data || {};
+      const failedCount = Array.isArray(data.failed) ? data.failed.length : 0;
+      setBulkFailedRows(Array.isArray(data.failed) ? data.failed : []);
+      setBulkState({
+        type: failedCount ? 'error' : 'success',
+        message: `Bulk upload complete. Created: ${data.created || 0}, Updated: ${data.updated || 0}, Failed: ${failedCount}.`,
+      });
+    } catch (error) {
+      setBulkFailedRows([]);
+      const apiError = error?.response?.data?.error || 'Bulk upload failed.';
+      setBulkState({ type: 'error', message: apiError });
+    } finally {
+      setIsBulkSubmitting(false);
+    }
+  };
 
   const handleLogout = () => {
     // Clear all authentication tokens and user data from localStorage
@@ -1045,6 +1339,25 @@ const TeacherDashboard = () => {
             setAllMessages={setConversationMessages}
             allUsers={[]}
             currentUser={user || { name: 'Faculty', initials: 'FM' }}
+          />
+        );
+      case "MST Marks":
+        return (
+          <TeachersMstMarks
+            students={students}
+            marksForm={marksForm}
+            onMarksFormChange={handleMarksFormChange}
+            onSubmitMarks={handleSubmitMstMarks}
+            isSubmitting={isSubmittingMarks}
+            submitState={marksSubmitState}
+            bulkFileName={bulkFileName}
+            bulkPreview={bulkMarksRows}
+            bulkState={bulkState}
+            bulkFailedRows={bulkFailedRows}
+            isBulkSubmitting={isBulkSubmitting}
+            onBulkFileChange={handleBulkFileChange}
+            onDownloadTemplate={handleDownloadBulkTemplate}
+            onSubmitBulkMarks={handleSubmitBulkMarks}
           />
         );
       case "Search":

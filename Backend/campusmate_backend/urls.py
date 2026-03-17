@@ -11,4 +11,5 @@ urlpatterns = [
     # ADD THIS LINE: Include notices app endpoints under /api/notices/
     path('api/notices/', include('notices.urls')), 
     path('api/chat/', include('chat.urls')),
+    path('api/marks/', include('marks.urls')),
 ]
