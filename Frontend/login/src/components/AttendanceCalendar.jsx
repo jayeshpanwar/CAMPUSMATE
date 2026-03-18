@@ -4,7 +4,7 @@ import { sessionApi, recordApi, courseApi } from './attendanceApi';
 import './AttendanceCalendar.css';
 
 const AttendanceCalendar = () => {
-  const [userType] = useState(localStorage.getItem('user_type') || 'student');
+  const [userType] = useState(localStorage.getItem('user_type') || localStorage.getItem('user_role') || 'student');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -292,7 +292,7 @@ const AttendanceCalendar = () => {
               <option value="">-- Select a course --</option>
               {courses.map(course => (
                 <option key={course.id} value={course.id}>
-                  {course.code} - {course.name}
+                  {course.code} - {course.title || course.name}
                 </option>
               ))}
             </select>

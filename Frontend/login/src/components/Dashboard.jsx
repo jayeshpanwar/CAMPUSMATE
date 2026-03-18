@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import apiClient, { getProfile, getChatGroups, getGroupMessages, getNoDuesSubjects, getNoDuesApplications, applyNoDues, getMyMarks } from "./api";
 import SharedMessagesPage from './SharedMessagesPage';
 import AttendancePage from './AttendancePage';
+import FacultyAvailabilityPage from './FacultyAvailabilityPage';
 
 // --- Icon Components ---
 const HomeIcon = ({ className }) => (
@@ -190,28 +191,28 @@ const DashboardPage = ({
     isGeneratingPlan,
 }) => (
     <div className="space-y-8">
-        <section className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white rounded-2xl p-6 md:p-8 shadow-lg">
+        <section className="bg-white border border-indigo-200 text-gray-900 rounded-2xl p-6 md:p-8 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
-                    <p className="uppercase tracking-wide text-indigo-100 text-xs font-semibold">Campus Overview</p>
+                    <p className="uppercase tracking-wide text-indigo-600 text-xs font-semibold">Campus Overview</p>
                     <h2 className="text-3xl font-bold mt-2">Welcome back, {user?.name || 'Student'}!</h2>
-                    <p className="text-indigo-100 mt-3 max-w-xl">Stay on top of important notices, competitive opportunities, and upcoming events curated for your batch.</p>
+                    <p className="text-gray-600 mt-3 max-w-xl">Stay on top of important notices, competitive opportunities, and upcoming events curated for your batch.</p>
                     {handleGenerateStudyPlan && (
                         <button
                             onClick={handleGenerateStudyPlan}
                             disabled={isGeneratingPlan}
-                            className="mt-6 inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="mt-6 inline-flex items-center gap-2 bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-300 px-4 py-2 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isGeneratingPlan ? 'Generating plan…' : '✨ Generate personalized study plan'}
                         </button>
                     )}
                 </div>
-                <div className="bg-white/10 rounded-xl p-4 backdrop-blur-md w-full lg:w-80">
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-indigo-100">Today&apos;s Snapshot</h3>
+                <div className="bg-white rounded-xl p-4 border border-indigo-200 w-full lg:w-80">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Today&apos;s Snapshot</h3>
                     <ul className="mt-4 space-y-3 text-sm">
-                        <li className="flex justify-between"><span className="text-indigo-100">Latest notice</span><span className="font-semibold">{notices[0]?.posted || 'No updates'}</span></li>
-                        <li className="flex justify-between"><span className="text-indigo-100">Hackathon deadlines</span><span className="font-semibold">{hackathons.length}</span></li>
-                        <li className="flex justify-between"><span className="text-indigo-100">Events this week</span><span className="font-semibold">{events.length}</span></li>
+                        <li className="flex justify-between"><span className="text-gray-600">Latest notice</span><span className="font-semibold">{notices[0]?.posted || 'No updates'}</span></li>
+                        <li className="flex justify-between"><span className="text-gray-600">Hackathon deadlines</span><span className="font-semibold">{hackathons.length}</span></li>
+                        <li className="flex justify-between"><span className="text-gray-600">Events this week</span><span className="font-semibold">{events.length}</span></li>
                     </ul>
                 </div>
             </div>
@@ -382,28 +383,26 @@ const CalendarPage = ({ handleGenerateDaySummary, isGeneratingSummary }) => {
 
     const selectedDateEvents = events.filter(event => new Date(event.date + 'T00:00:00').toDateString() === selectedDate.toDateString());
 
-    const EventModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-                <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold">Add Event for {selectedDate.toLocaleDateString()}</h3><button onClick={() => setIsEventModalOpen(false)}><XIcon className="w-6 h-6 text-gray-500" /></button></div>
-                <form onSubmit={handleSaveEvent}>
-                    <div className="space-y-4">
-                        <div><label className="block text-sm font-medium text-gray-700">Title</label><input type="text" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"/></div>
-                        <div><label className="block text-sm font-medium text-gray-700">Time</label><input type="time" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"/></div>
-                        <div><label className="block text-sm font-medium text-gray-700">Details</label><textarea value={newEvent.details} onChange={e => setNewEvent({...newEvent, details: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea></div>
-                        <div><label className="block text-sm font-medium text-gray-700">Type</label><select value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"><option value="event">Event</option><option value="important">Important</option><option value="hackathon">Hackathon</option></select></div>
-                    </div>
-                    <div className="mt-6 flex justify-end"><button type="submit" className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Save Event</button></div>
-                </form>
-            </div>
-        </div>
-    );
-    
     const eventTypeClasses = { important: { border: 'border-purple-500', bg: 'bg-purple-50', dot: 'bg-purple-500' }, hackathon: { border: 'border-green-500', bg: 'bg-green-50', dot: 'bg-green-500' }, event: { border: 'border-blue-500', bg: 'bg-blue-50', dot: 'bg-blue-500' }, };
 
     return (
         <div className="flex flex-col lg:flex-row gap-8">
-            {isEventModalOpen && <EventModal />}
+            {isEventModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold">Add Event for {selectedDate.toLocaleDateString()}</h3><button onClick={() => setIsEventModalOpen(false)}><XIcon className="w-6 h-6 text-gray-500" /></button></div>
+                        <form onSubmit={handleSaveEvent}>
+                            <div className="space-y-4">
+                                <div><label className="block text-sm font-medium text-gray-700">Title</label><input type="text" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"/></div>
+                                <div><label className="block text-sm font-medium text-gray-700">Time</label><input type="time" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"/></div>
+                                <div><label className="block text-sm font-medium text-gray-700">Details</label><textarea value={newEvent.details} onChange={e => setNewEvent({...newEvent, details: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea></div>
+                                <div><label className="block text-sm font-medium text-gray-700">Type</label><select value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"><option value="event">Event</option><option value="important">Important</option><option value="hackathon">Hackathon</option></select></div>
+                            </div>
+                            <div className="mt-6 flex justify-end"><button type="submit" className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Save Event</button></div>
+                        </form>
+                    </div>
+                </div>
+            )}
             <div className="flex-1 bg-white p-6 rounded-xl shadow-md">
                 <div className="flex justify-between items-center mb-4"><button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-gray-100"><ChevronLeftIcon className="w-5 h-5" /></button><h2 className="text-xl font-bold text-gray-800">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2><button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-gray-100"><ChevronRightIcon className="w-5 h-5" /></button></div>
                 <div className="grid grid-cols-7 text-center font-semibold text-gray-500 mb-2">{daysOfWeek.map(day => <div key={day} className="py-2">{day}</div>)}</div>
@@ -808,9 +807,128 @@ const TasksPage = ({
     );
 };
 
-const SearchPage = () => (
-    <div className="p-8 bg-white rounded-xl shadow-md"><h1 className="text-3xl font-bold text-gray-800">Search</h1><p className="text-gray-500 mt-2">This page is under construction.</p></div>
-);
+const SearchPage = ({ notices = [], conversations = [], studentTasks = [], teacherTasks = [] }) => {
+    const [query, setQuery] = useState('');
+    const [scope, setScope] = useState('all');
+
+    const normalizedQuery = query.trim().toLowerCase();
+
+    const indexedRows = [
+        ...notices.map((notice) => ({
+            id: `notice-${notice.id}`,
+            type: 'notices',
+            title: notice.title,
+            subtitle: notice.content || '',
+            meta: notice.posted || '',
+        })),
+        ...conversations.map((conversation) => ({
+            id: `conversation-${conversation.id}`,
+            type: 'messages',
+            title: conversation.name,
+            subtitle: conversation.lastMessage || '',
+            meta: conversation.time || '',
+        })),
+        ...studentTasks.map((task) => ({
+            id: `student-task-${task.id}`,
+            type: 'my-tasks',
+            title: task.title,
+            subtitle: task.notes || '',
+            meta: task.dueDate ? `Due ${task.dueDate}` : 'No due date',
+        })),
+        ...teacherTasks.map((task) => ({
+            id: `faculty-task-${task.id}`,
+            type: 'faculty-tasks',
+            title: task.title,
+            subtitle: task.description || '',
+            meta: task.course || '',
+        })),
+        ...eventShowcase.map((event) => ({
+            id: `event-${event.id}`,
+            type: 'events',
+            title: event.title,
+            subtitle: event.description || '',
+            meta: `${event.date || ''}${event.location ? ` • ${event.location}` : ''}`,
+        })),
+        ...hackathonShowcase.map((item) => ({
+            id: `hackathon-${item.id}`,
+            type: 'hackathons',
+            title: item.title,
+            subtitle: item.description || '',
+            meta: `Deadline: ${item.deadline || '-'}${item.status ? ` • ${item.status}` : ''}`,
+        })),
+    ];
+
+    const filteredRows = indexedRows.filter((row) => {
+        if (scope !== 'all' && row.type !== scope) return false;
+        if (!normalizedQuery) return true;
+        const haystack = `${row.title} ${row.subtitle} ${row.meta}`.toLowerCase();
+        return haystack.includes(normalizedQuery);
+    });
+
+    const scopeOptions = [
+        { key: 'all', label: 'All' },
+        { key: 'notices', label: 'Notices' },
+        { key: 'messages', label: 'Messages' },
+        { key: 'my-tasks', label: 'My Tasks' },
+        { key: 'faculty-tasks', label: 'Faculty Tasks' },
+        { key: 'events', label: 'Events' },
+        { key: 'hackathons', label: 'Hackathons' },
+    ];
+
+    return (
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-5">
+            <header>
+                <h2 className="text-2xl font-bold text-gray-800">Smart Search</h2>
+                <p className="text-sm text-gray-500 mt-1">Search notices, messages, tasks, events, and hackathons from one place.</p>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+                <input
+                    type="text"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search by keyword..."
+                    className="lg:col-span-3 rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <select
+                    value={scope}
+                    onChange={(event) => setScope(event.target.value)}
+                    className="rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                    {scopeOptions.map((option) => (
+                        <option key={option.key} value={option.key}>{option.label}</option>
+                    ))}
+                </select>
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>{filteredRows.length} result(s)</span>
+                {normalizedQuery && <button onClick={() => setQuery('')} className="text-indigo-600 font-semibold">Clear search</button>}
+            </div>
+
+            <div className="border border-gray-200 rounded-xl divide-y divide-gray-200 max-h-[28rem] overflow-y-auto">
+                {filteredRows.length === 0 ? (
+                    <div className="p-6 text-sm text-gray-500 text-center">No results found. Try a different keyword or scope.</div>
+                ) : (
+                    filteredRows.map((row) => (
+                        <article key={row.id} className="p-4 hover:bg-gray-50 transition">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">{row.title}</p>
+                                    {row.subtitle && <p className="text-sm text-gray-600 mt-1 line-clamp-2">{row.subtitle}</p>}
+                                    {row.meta && <p className="text-xs text-gray-400 mt-2">{row.meta}</p>}
+                                </div>
+                                <span className="text-[10px] uppercase tracking-wide bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100 whitespace-nowrap">
+                                    {row.type.replace('-', ' ')}
+                                </span>
+                            </div>
+                        </article>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
 
 const SettingsPage = ({ user }) => {
     const settingsKey = `campusmate_settings_${user?.role || 'student'}`;
@@ -1458,6 +1576,7 @@ const Dashboard = () => {
         { name: 'Dashboard', icon: HomeIcon },
         { name: 'Tasks', icon: ClipboardIcon }, 
         { name: 'Attendance', icon: ClipboardIcon },
+        { name: 'Faculty Status', icon: CalendarIcon },
         { name: 'MST Marks', icon: ClipboardIcon },
         { name: 'Messages', icon: MessageSquareIcon },
         { name: 'Search', icon: SearchIcon },
@@ -1545,6 +1664,8 @@ const Dashboard = () => {
                 );
             case 'Attendance':
                 return <AttendancePage />;
+            case 'Faculty Status':
+                return <FacultyAvailabilityPage mode="student" />;
             case 'MST Marks':
                 return (
                     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
@@ -1604,7 +1725,14 @@ const Dashboard = () => {
             case 'No-Dues': // Added No-Dues Case
                 return <NoDuesPage user={user} />;
             case 'Search':
-                return <SearchPage />;
+                return (
+                    <SearchPage
+                        notices={notices}
+                        conversations={conversations}
+                        studentTasks={studentTasks}
+                        teacherTasks={teacherTaskFeed}
+                    />
+                );
             case 'Settings':
                   return <SettingsPage user={user} />;
             default:
@@ -1625,7 +1753,7 @@ const Dashboard = () => {
     const Sidebar = () => (
         <aside className={`bg-white w-64 min-h-screen flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:relative`}>
             <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-center h-20">
-             <div className="flex flex-col items-center justify-center bg-indigo-600 text-white px-5 py-2 rounded-xl shadow-lg leading-tight">
+                         <div className="flex flex-col items-center justify-center bg-white text-indigo-700 border border-indigo-300 px-5 py-2 rounded-xl shadow-sm leading-tight">
   <span className="text-sm font-medium tracking-[0.2em] opacity-90 uppercase">
     CampusMate
   </span>
@@ -1636,14 +1764,14 @@ const Dashboard = () => {
             </div>
             <nav className="flex-1 px-4 py-6 space-y-2">
                 {navItems.map(item => (
-                    <a href="#" key={item.name} onClick={() => handleNavClick(item.name)} className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeNav === item.name ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    <a href="#" key={item.name} onClick={() => handleNavClick(item.name)} className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors border ${activeNav === item.name ? 'bg-white text-indigo-700 border-indigo-300' : 'text-gray-500 border-transparent hover:bg-gray-50 hover:border-gray-200'}`}>
                         <item.icon className="h-6 w-6" />
                         <span className="font-semibold">{item.name}</span>
                     </a>
                 ))}
             </nav>
             <div className="px-4 py-6">
-                <a href="#" onClick={() => handleNavClick('Settings')} className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeNav === 'Settings' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+                <a href="#" onClick={() => handleNavClick('Settings')} className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors border ${activeNav === 'Settings' ? 'bg-white text-indigo-700 border-indigo-300' : 'text-gray-500 border-transparent hover:bg-gray-50 hover:border-gray-200'}`}>
                     <SettingsIcon className="h-6 w-6" />
                     <span className="font-semibold">Settings</span>
                 </a>

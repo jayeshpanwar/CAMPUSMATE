@@ -16,6 +16,7 @@ import {
 } from "./api";
 import SharedMessagesPage from './SharedMessagesPage';
 import AttendancePage from './AttendancePage';
+import FacultyAvailabilityPage from './FacultyAvailabilityPage';
 
 const SidebarIcon = ({ children, className }) => (
   <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${className}`}>
@@ -224,80 +225,78 @@ const TeachersCalendar = ({
     return events.some((event) => event.date === key);
   };
 
-  const CalendarModal = () => (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <p className="text-lg font-semibold text-gray-900">Create calendar broadcast</p>
-          <button onClick={onCloseModal} className="text-gray-500 hover:text-gray-900">
-            <XIcon className="h-5 w-5" />
-          </button>
-        </div>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            onCreate();
-          }}
-          className="px-6 py-6 space-y-4"
-        >
-          <div className="grid grid-cols-1 gap-4">
-            <label className="text-sm font-medium text-gray-700">
-              Title
-              <input name="title" value={form.title} onChange={onFormChange} placeholder="Session or announcement title" className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required />
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="text-sm font-medium text-gray-700">
-                Date
-                <input name="date" type="date" value={form.date} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required />
-              </label>
-              <label className="text-sm font-medium text-gray-700">
-                Time
-                <input name="time" type="time" value={form.time} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required />
-              </label>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="text-sm font-medium text-gray-700">
-                Branch
-                <select name="branch" value={form.branch} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required>
-                  <option value="">Select branch</option>
-                  <option value="CSE">CSE</option>
-                  <option value="ECE">ECE</option>
-                  <option value="ME">ME</option>
-                  <option value="EE">EE</option>
-                </select>
-              </label>
-              <label className="text-sm font-medium text-gray-700">
-                Year
-                <select name="year" value={form.year} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required>
-                  <option value="">Select year</option>
-                  <option value="1">1st</option>
-                  <option value="2">2nd</option>
-                  <option value="3">3rd</option>
-                  <option value="4">4th</option>
-                </select>
-              </label>
-            </div>
-            <label className="text-sm font-medium text-gray-700">
-              Details for students
-              <textarea name="details" value={form.details} onChange={onFormChange} rows={3} placeholder="Add agenda, preparation pointers, or attachments" className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" />
-            </label>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onCloseModal} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900">
-              Cancel
-            </button>
-            <button type="submit" className="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-black">
-              Broadcast Event
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-
   return (
     <div className="flex flex-col lg:flex-row gap-8">
-      {isModalOpen && <CalendarModal />}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <p className="text-lg font-semibold text-gray-900">Create calendar broadcast</p>
+              <button onClick={onCloseModal} className="text-gray-500 hover:text-gray-900">
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                onCreate();
+              }}
+              className="px-6 py-6 space-y-4"
+            >
+              <div className="grid grid-cols-1 gap-4">
+                <label className="text-sm font-medium text-gray-700">
+                  Title
+                  <input name="title" value={form.title} onChange={onFormChange} placeholder="Session or announcement title" className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required />
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="text-sm font-medium text-gray-700">
+                    Date
+                    <input name="date" type="date" value={form.date} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required />
+                  </label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Time
+                    <input name="time" type="time" value={form.time} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required />
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="text-sm font-medium text-gray-700">
+                    Branch
+                    <select name="branch" value={form.branch} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required>
+                      <option value="">Select branch</option>
+                      <option value="CSE">CSE</option>
+                      <option value="ECE">ECE</option>
+                      <option value="ME">ME</option>
+                      <option value="EE">EE</option>
+                    </select>
+                  </label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Year
+                    <select name="year" value={form.year} onChange={onFormChange} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" required>
+                      <option value="">Select year</option>
+                      <option value="1">1st</option>
+                      <option value="2">2nd</option>
+                      <option value="3">3rd</option>
+                      <option value="4">4th</option>
+                    </select>
+                  </label>
+                </div>
+                <label className="text-sm font-medium text-gray-700">
+                  Details for students
+                  <textarea name="details" value={form.details} onChange={onFormChange} rows={3} placeholder="Add agenda, preparation pointers, or attachments" className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900" />
+                </label>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={onCloseModal} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900">
+                  Cancel
+                </button>
+                <button type="submit" className="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-black">
+                  Broadcast Event
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <button onClick={onPrevMonth} className="p-2 rounded-full border border-gray-200 text-gray-600 hover:border-gray-900">
@@ -395,21 +394,107 @@ const TeachersCalendar = ({
   );
 };
 
-const TeachersSearch = () => (
-  <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-6 shadow-sm">
-    <header>
-      <h3 className="text-xl font-semibold text-gray-900">Search Directory</h3>
-      <p className="text-sm text-gray-500">Find students, faculty, or resources instantly.</p>
-    </header>
-    <div className="flex flex-col md:flex-row gap-4">
-      <input className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Search by name, roll number, or keyword" />
-      <button className="px-4 py-3 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-black transition">Filter</button>
+const TeachersSearch = ({ students = [], conversations = [], noDuesRequests = [], notices = [] }) => {
+  const [query, setQuery] = useState('');
+  const [scope, setScope] = useState('all');
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const indexedRows = useMemo(() => {
+    return [
+      ...students.map((student) => ({
+        id: `student-${student.id}`,
+        type: 'students',
+        title: student.display_name || student.email || 'Student',
+        subtitle: student.email || '',
+        meta: student.department || 'Department not set',
+      })),
+      ...conversations.map((conversation) => ({
+        id: `conversation-${conversation.id}`,
+        type: 'messages',
+        title: conversation.name,
+        subtitle: conversation.lastMessage || '',
+        meta: conversation.time || '',
+      })),
+      ...noDuesRequests.map((request) => ({
+        id: `no-dues-${request.id}`,
+        type: 'no-dues',
+        title: request.student_name || request.student_email || 'No-dues request',
+        subtitle: request.subject_name || request.subject?.subject_name || 'Subject not set',
+        meta: (request.status || 'pending').toUpperCase(),
+      })),
+      ...notices.map((notice) => ({
+        id: `notice-${notice.id}`,
+        type: 'notices',
+        title: notice.title,
+        subtitle: notice.content || '',
+        meta: notice.timestamp || '',
+      })),
+    ];
+  }, [students, conversations, noDuesRequests, notices]);
+
+  const filteredRows = indexedRows.filter((row) => {
+    if (scope !== 'all' && row.type !== scope) return false;
+    if (!normalizedQuery) return true;
+    const haystack = `${row.title} ${row.subtitle} ${row.meta}`.toLowerCase();
+    return haystack.includes(normalizedQuery);
+  });
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-6 shadow-sm">
+      <header>
+        <h3 className="text-xl font-semibold text-gray-900">Search Directory</h3>
+        <p className="text-sm text-gray-500">Search students, messages, notices, and no-dues requests.</p>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className="md:col-span-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          placeholder="Search by name, email, subject, or keyword"
+        />
+        <select
+          value={scope}
+          onChange={(event) => setScope(event.target.value)}
+          className="bg-white border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900"
+        >
+          <option value="all">All</option>
+          <option value="students">Students</option>
+          <option value="messages">Messages</option>
+          <option value="no-dues">No-Dues</option>
+          <option value="notices">Notices</option>
+        </select>
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <span>{filteredRows.length} result(s)</span>
+        {normalizedQuery && <button onClick={() => setQuery('')} className="font-semibold text-gray-700">Clear search</button>}
+      </div>
+
+      <div className="border border-gray-200 rounded-xl bg-gray-50 divide-y divide-gray-200 max-h-[30rem] overflow-y-auto">
+        {filteredRows.length === 0 ? (
+          <p className="p-6 text-sm text-gray-600 text-center">No matching results found.</p>
+        ) : (
+          filteredRows.map((row) => (
+            <article key={row.id} className="p-4 bg-white hover:bg-gray-50 transition">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{row.title}</p>
+                  {row.subtitle && <p className="text-sm text-gray-600 mt-1 line-clamp-2">{row.subtitle}</p>}
+                  {row.meta && <p className="text-xs text-gray-400 mt-2">{row.meta}</p>}
+                </div>
+                <span className="text-[10px] uppercase tracking-wide bg-gray-100 text-gray-700 px-2 py-1 rounded-full border border-gray-200 whitespace-nowrap">
+                  {row.type.replace('-', ' ')}
+                </span>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
     </div>
-    <div className="border border-gray-200 rounded-xl p-6 bg-gray-50 text-gray-600 text-sm">
-      Search results appear here. Integrate with the backend directory to enable smart lookups.
-    </div>
-  </div>
-);
+  );
+};
 
 const TeachersNoDues = ({ requests, onDecision, subjects, subjectForm, onSubjectFormChange, onCreateSubject }) => (
   <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
@@ -490,41 +575,165 @@ const TeachersNoDues = ({ requests, onDecision, subjects, subjectForm, onSubject
   </div>
 );
 
-const TeachersTimetable = ({ schedule }) => (
-  <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-6 shadow-sm">
-    <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h3 className="text-xl font-semibold text-gray-900">Teaching Schedule</h3>
-        <p className="text-sm text-gray-500">Daily sessions, invigilation, and mentorship slots.</p>
+const TeachersTimetable = ({ schedule, onAddLecture, onDeleteLecture, onUpdateLecture }) => {
+  const [newLecture, setNewLecture] = useState({
+    time: '',
+    course: '',
+    batch: '',
+    type: 'Lecture',
+    note: '',
+  });
+
+  const [editingId, setEditingId] = useState(null);
+  const [editingLecture, setEditingLecture] = useState({
+    time: '',
+    course: '',
+    batch: '',
+    type: '',
+    note: '',
+  });
+
+  const startEditing = (slot) => {
+    setEditingId(slot.id);
+    setEditingLecture({
+      time: slot.time || '',
+      course: slot.course || '',
+      batch: slot.batch || '',
+      type: slot.type || '',
+      note: slot.note || '',
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingLecture({ time: '', course: '', batch: '', type: '', note: '' });
+  };
+
+  const handleAdd = () => {
+    if (!newLecture.time.trim() || !newLecture.course.trim()) return;
+    onAddLecture({
+      time: newLecture.time.trim(),
+      course: newLecture.course.trim(),
+      batch: newLecture.batch.trim(),
+      type: newLecture.type.trim() || 'Lecture',
+      note: newLecture.note.trim(),
+    });
+    setNewLecture({ time: '', course: '', batch: '', type: 'Lecture', note: '' });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingId) return;
+    if (!editingLecture.time.trim() || !editingLecture.course.trim()) return;
+    onUpdateLecture(editingId, {
+      time: editingLecture.time.trim(),
+      course: editingLecture.course.trim(),
+      batch: editingLecture.batch.trim(),
+      type: editingLecture.type.trim() || 'Lecture',
+      note: editingLecture.note.trim(),
+    });
+    cancelEditing();
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-6 shadow-sm">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">Teaching Schedule</h3>
+          <p className="text-sm text-gray-500">Add, edit, delete, and customise lecture slots.</p>
+        </div>
+      </header>
+
+      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+        <h4 className="text-sm font-semibold text-gray-800 mb-3">Add Lecture</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <input
+            value={newLecture.time}
+            onChange={(event) => setNewLecture((prev) => ({ ...prev, time: event.target.value }))}
+            placeholder="09:00 - 10:00"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            value={newLecture.course}
+            onChange={(event) => setNewLecture((prev) => ({ ...prev, course: event.target.value }))}
+            placeholder="Course"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            value={newLecture.batch}
+            onChange={(event) => setNewLecture((prev) => ({ ...prev, batch: event.target.value }))}
+            placeholder="Batch / Room"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            value={newLecture.type}
+            onChange={(event) => setNewLecture((prev) => ({ ...prev, type: event.target.value }))}
+            placeholder="Type"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            value={newLecture.note}
+            onChange={(event) => setNewLecture((prev) => ({ ...prev, note: event.target.value }))}
+            placeholder="Notes"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </div>
+        <button onClick={handleAdd} className="mt-3 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-black transition">Add Lecture</button>
       </div>
-      <button className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-black transition">Download PDF</button>
-    </header>
-    <div className="overflow-x-auto border border-gray-200 rounded-2xl">
-      <table className="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
-        <thead className="bg-gray-50 text-gray-600">
-          <tr>
-            <th className="px-4 py-3 text-left font-medium">Time</th>
-            <th className="px-4 py-3 text-left font-medium">Course</th>
-            <th className="px-4 py-3 text-left font-medium">Batch / Room</th>
-            <th className="px-4 py-3 text-left font-medium">Type</th>
-            <th className="px-4 py-3 text-left font-medium">Notes</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {schedule.map((slot) => (
-            <tr key={`${slot.time}-${slot.course}`}>
-              <td className="px-4 py-3 whitespace-nowrap text-gray-900">{slot.time}</td>
-              <td className="px-4 py-3 text-gray-900">{slot.course}</td>
-              <td className="px-4 py-3">{slot.batch}</td>
-              <td className="px-4 py-3">{slot.type}</td>
-              <td className="px-4 py-3 text-gray-500">{slot.note}</td>
+
+      <div className="overflow-x-auto border border-gray-200 rounded-2xl">
+        <table className="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+          <thead className="bg-gray-50 text-gray-600">
+            <tr>
+              <th className="px-4 py-3 text-left font-medium">Time</th>
+              <th className="px-4 py-3 text-left font-medium">Course</th>
+              <th className="px-4 py-3 text-left font-medium">Batch / Room</th>
+              <th className="px-4 py-3 text-left font-medium">Type</th>
+              <th className="px-4 py-3 text-left font-medium">Notes</th>
+              <th className="px-4 py-3 text-right font-medium">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {schedule.map((slot) => {
+              const isEditing = editingId === slot.id;
+              return (
+                <tr key={slot.id}>
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-900">
+                    {isEditing ? <input value={editingLecture.time} onChange={(event) => setEditingLecture((prev) => ({ ...prev, time: event.target.value }))} className="rounded border border-gray-300 px-2 py-1 w-full" /> : slot.time}
+                  </td>
+                  <td className="px-4 py-3 text-gray-900">
+                    {isEditing ? <input value={editingLecture.course} onChange={(event) => setEditingLecture((prev) => ({ ...prev, course: event.target.value }))} className="rounded border border-gray-300 px-2 py-1 w-full" /> : slot.course}
+                  </td>
+                  <td className="px-4 py-3">
+                    {isEditing ? <input value={editingLecture.batch} onChange={(event) => setEditingLecture((prev) => ({ ...prev, batch: event.target.value }))} className="rounded border border-gray-300 px-2 py-1 w-full" /> : slot.batch}
+                  </td>
+                  <td className="px-4 py-3">
+                    {isEditing ? <input value={editingLecture.type} onChange={(event) => setEditingLecture((prev) => ({ ...prev, type: event.target.value }))} className="rounded border border-gray-300 px-2 py-1 w-full" /> : slot.type}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {isEditing ? <input value={editingLecture.note} onChange={(event) => setEditingLecture((prev) => ({ ...prev, note: event.target.value }))} className="rounded border border-gray-300 px-2 py-1 w-full" /> : slot.note}
+                  </td>
+                  <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                    {isEditing ? (
+                      <>
+                        <button onClick={handleSaveEdit} className="px-3 py-1.5 text-xs font-semibold rounded bg-gray-900 text-white hover:bg-black">Save</button>
+                        <button onClick={cancelEditing} className="px-3 py-1.5 text-xs font-semibold rounded border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => startEditing(slot)} className="px-3 py-1.5 text-xs font-semibold rounded border border-gray-300 text-gray-600 hover:bg-gray-50">Edit</button>
+                        <button onClick={() => onDeleteLecture(slot.id)} className="px-3 py-1.5 text-xs font-semibold rounded border border-red-200 text-red-600 hover:bg-red-50">Delete</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TeachersMstMarks = ({
   students,
@@ -700,6 +909,7 @@ const navItems = [
   { key: "Home", icon: HomeIcon },
   { key: "Messages", icon: MessageIcon },
   { key: "Attendance", icon: AttendanceIcon },
+  { key: "Availability", icon: CalendarIcon },
   { key: "MST Marks", icon: ClipboardIcon },
   { key: "Search", icon: SearchIcon },
   { key: "Calendar", icon: CalendarIcon },
@@ -800,12 +1010,52 @@ const TeacherDashboard = () => {
     { id: 2, title: "Industry Talk", date: "2026-02-05", time: "11:00", branch: "ECE", year: "4", description: "AI in Communication Systems" },
     { id: 3, title: "Mid-term Review", date: "2026-02-12", time: "14:00", branch: "CSE", year: "4", description: "Project milestone evaluation" }
   ]);
-  const [timetable] = useState([
-    { time: "09:00 - 10:00", course: "AI Foundations", batch: "CSE 6th Sem • Room 304", type: "Lecture", note: "Lab on Thursday" },
-    { time: "10:15 - 11:15", course: "Project Mentorship", batch: "Capstone Group A", type: "Mentoring", note: "Prototype review" },
-    { time: "12:00 - 13:00", course: "Faculty Council", batch: "Staff Room", type: "Meeting", note: "Academic planning" },
-    { time: "14:00 - 16:00", course: "AI Lab", batch: "CSE 6th Sem • Lab 2", type: "Practical", note: "Neural nets hands-on" }
-  ]);
+  const [timetable, setTimetable] = useState(() => {
+    try {
+      const stored = localStorage.getItem('faculty_timetable_slots');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (err) {
+      console.warn('Failed to parse stored timetable', err);
+    }
+
+    return [
+      { id: 1, time: "09:00 - 10:00", course: "AI Foundations", batch: "CSE 6th Sem • Room 304", type: "Lecture", note: "Lab on Thursday" },
+      { id: 2, time: "10:15 - 11:15", course: "Project Mentorship", batch: "Capstone Group A", type: "Mentoring", note: "Prototype review" },
+      { id: 3, time: "12:00 - 13:00", course: "Faculty Council", batch: "Staff Room", type: "Meeting", note: "Academic planning" },
+      { id: 4, time: "14:00 - 16:00", course: "AI Lab", batch: "CSE 6th Sem • Lab 2", type: "Practical", note: "Neural nets hands-on" }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('faculty_timetable_slots', JSON.stringify(timetable));
+    } catch (err) {
+      console.warn('Failed to store timetable', err);
+    }
+  }, [timetable]);
+
+  const handleAddLecture = (lecture) => {
+    setTimetable((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        ...lecture,
+      },
+    ]);
+  };
+
+  const handleDeleteLecture = (lectureId) => {
+    setTimetable((prev) => prev.filter((slot) => slot.id !== lectureId));
+  };
+
+  const handleUpdateLecture = (lectureId, updatedLecture) => {
+    setTimetable((prev) =>
+      prev.map((slot) => (slot.id === lectureId ? { ...slot, ...updatedLecture } : slot))
+    );
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -1352,6 +1602,8 @@ const TeacherDashboard = () => {
         );
       case "Attendance":
         return <AttendancePage />;
+      case "Availability":
+        return <FacultyAvailabilityPage mode="faculty" />;
       case "MST Marks":
         return (
           <TeachersMstMarks
@@ -1372,7 +1624,14 @@ const TeacherDashboard = () => {
           />
         );
       case "Search":
-        return <TeachersSearch />;
+        return (
+          <TeachersSearch
+            students={students}
+            conversations={conversations}
+            noDuesRequests={noDuesRequests}
+            notices={notices}
+          />
+        );
       case "Calendar":
         return (
           <TeachersCalendar
@@ -1402,7 +1661,14 @@ const TeacherDashboard = () => {
           />
         );
       case "Timetable":
-        return <TeachersTimetable schedule={timetable} />;
+        return (
+          <TeachersTimetable
+            schedule={timetable}
+            onAddLecture={handleAddLecture}
+            onDeleteLecture={handleDeleteLecture}
+            onUpdateLecture={handleUpdateLecture}
+          />
+        );
       case "Settings":
         return <FacultySettingsPage user={user} />;
       default:

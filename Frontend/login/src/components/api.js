@@ -166,8 +166,19 @@ export const sendGroupMessage = (groupId, content) => {
 };
 
 // Create a new chat group
-export const createChatGroup = (name, description = '') => {
-  return apiClient.post('chat/groups/', { name, description });
+export const createChatGroup = (name, description = '', memberIds = [], memberEmails = []) => {
+  return apiClient.post('chat/groups/', {
+    name,
+    description,
+    member_ids: memberIds,
+    member_emails: memberEmails,
+  });
+};
+
+// Get users that can be invited while creating group
+export const getAvailableChatUsers = (query = '') => {
+  const encoded = encodeURIComponent(query);
+  return apiClient.get(`chat/groups/available_users/?q=${encoded}`);
 };
 
 // Add member to group
@@ -222,7 +233,7 @@ export const reviewNoDuesApplication = (applicationId, payload) => {
 export const analyzeMidSemMarks = (payload) =>
   apiClient.post('marks/analyze/', payload);
 
-/** Generate Gemini 6-week study plan (pass study_plan_id or inline marks) */
+/** Generate Gemini study plan (pass study_plan_id or inline marks, optional weeks_count) */
 export const generateStudyPlan = (payload) =>
   apiClient.post('marks/generate-study-plan/', payload);
 
@@ -257,5 +268,25 @@ export const getFacultyStudents = () =>
 /** Student: retrieve their raw marks entries (optionally filter by semester) */
 export const getMyMarks = (semester = '') =>
   apiClient.get('marks/my-marks/', { params: semester ? { semester } : {} });
+
+// --- FACULTY AVAILABILITY & LEAVE CALLS ---
+
+export const getMyFacultyAvailability = () =>
+  apiClient.get('availability/my_availability/');
+
+export const updateMyFacultyAvailability = (payload) =>
+  apiClient.patch('availability/update_availability/', payload);
+
+export const getAllFacultyAvailability = () =>
+  apiClient.get('availability/all_faculty_availability/');
+
+export const createLeaveRequest = (payload) =>
+  apiClient.post('leave-requests/', payload);
+
+export const getMyLeaveRequests = () =>
+  apiClient.get('leave-requests/');
+
+export const getActiveLeaveRequests = () =>
+  apiClient.get('leave-requests/active_leaves/');
 
 export default apiClient;

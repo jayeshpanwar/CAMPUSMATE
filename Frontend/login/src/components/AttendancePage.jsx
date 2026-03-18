@@ -5,8 +5,9 @@ import AttendanceCalendar from './AttendanceCalendar';
 import './AttendancePage.css';
 
 const AttendancePage = () => {
-  const [userType] = useState(localStorage.getItem('user_type') || 'student');
+  const [userType] = useState(localStorage.getItem('user_type') || localStorage.getItem('user_role') || 'student');
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'list'
+  const [facultyAction, setFacultyAction] = useState('course'); // 'course' | 'session'
   
   // Course management
   const [courses, setCourses] = useState([]);
@@ -19,10 +20,10 @@ const AttendancePage = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [showNewSessionForm, setShowNewSessionForm] = useState(false);
   const [newSession, setNewSession] = useState({ 
-    session_date: '', 
+    title: '',
+    date: '', 
     start_time: '', 
     end_time: '', 
-    room: '' 
   });
 
   // Manual mark modal
@@ -31,6 +32,12 @@ const AttendancePage = () => {
   const [modalStudents, setModalStudents] = useState([]);
   const [modalAttendanceStatus, setModalAttendanceStatus] = useState({});
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
+  const [showAddStudentsPanel, setShowAddStudentsPanel] = useState(false);
+  const [availableStudents, setAvailableStudents] = useState([]);
+  const [selectedStudentIdsToAdd, setSelectedStudentIdsToAdd] = useState([]);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [isLoadingAvailableStudents, setIsLoadingAvailableStudents] = useState(false);
+  const [isAddingStudents, setIsAddingStudents] = useState(false);
 
   // Attendance marking
   const [sessionAttendance, setSessionAttendance] = useState([]);
@@ -48,6 +55,21 @@ const AttendancePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  const extractApiError = (err, fallbackMessage) => {
+    const payload = err?.response?.data;
+    if (!payload) return fallbackMessage;
+    if (typeof payload === 'string') return payload;
+    if (payload.detail) return payload.detail;
+    if (payload.error) return payload.error;
+    if (typeof payload === 'object') {
+      const firstKey = Object.keys(payload)[0];
+      const firstValue = payload[firstKey];
+      if (Array.isArray(firstValue) && firstValue.length > 0) return String(firstValue[0]);
+      if (firstValue) return String(firstValue);
+    }
+    return fallbackMessage;
+  };
 
   // Fetch courses on component mount
   useEffect(() => {
@@ -93,17 +115,20 @@ const AttendancePage = () => {
     try {
       setLoading(true);
       const courseData = {
-        ...newCourse,
+        title: newCourse.name,
+        description: newCourse.description,
+        semester: newCourse.semester ? parseInt(newCourse.semester, 10) : null,
         code: newCourse.code.toUpperCase(),
       };
       const response = await courseApi.createCourse(courseData);
       setCourses([...courses, response.data]);
       setNewCourse({ code: '', name: '', description: '', semester: '' });
       setShowNewCourseForm(false);
+      setFacultyAction('session');
       setSuccess('Course created successfully');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create course');
+      setError(extractApiError(err, 'Failed to create course'));
     } finally {
       setLoading(false);
     }
@@ -137,16 +162,15 @@ const AttendancePage = () => {
       const sessionData = {
         ...newSession,
         course: selectedCourse.id,
-        status: 'scheduled',
       };
       const response = await sessionApi.createSession(sessionData);
       setSessions([...sessions, response.data]);
-      setNewSession({ session_date: '', start_time: '', end_time: '', room: '' });
+      setNewSession({ title: '', date: '', start_time: '', end_time: '' });
       setShowNewSessionForm(false);
       setSuccess('Session created successfully');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create session');
+      setError(extractApiError(err, 'Failed to create session'));
     } finally {
       setLoading(false);
     }
@@ -216,13 +240,14 @@ const AttendancePage = () => {
     try {
       setLoading(true);
       setModalSession(session);
-      
-      // Fetch enrolled students for the course
-      const response = await courseApi.getEnrolledStudents(session.course_id);
-      const students = response.data;
-      
+
+      const students = await fetchEnrolledStudentsForCourse(session.course);
       setModalStudents(students);
       setModalAttendanceStatus({});
+      setShowAddStudentsPanel(false);
+      setAvailableStudents([]);
+      setSelectedStudentIdsToAdd([]);
+      setStudentSearchQuery('');
       setShowManualMarkModal(true);
       setError(null);
     } catch (err) {
@@ -239,6 +264,78 @@ const AttendancePage = () => {
     setModalSession(null);
     setModalStudents([]);
     setModalAttendanceStatus({});
+    setShowAddStudentsPanel(false);
+    setAvailableStudents([]);
+    setSelectedStudentIdsToAdd([]);
+    setStudentSearchQuery('');
+  };
+
+  const fetchEnrolledStudentsForCourse = async (courseId) => {
+    const response = await courseApi.getEnrolledStudents(courseId);
+    return response.data || [];
+  };
+
+  const loadAvailableStudents = async (courseId, query = '') => {
+    try {
+      setIsLoadingAvailableStudents(true);
+      const response = await courseApi.getAvailableStudents(courseId, query);
+      setAvailableStudents(response.data || []);
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to fetch available students'));
+    } finally {
+      setIsLoadingAvailableStudents(false);
+    }
+  };
+
+  const openAddStudentsPanel = async () => {
+    if (!modalSession) return;
+    setShowAddStudentsPanel(true);
+    await loadAvailableStudents(modalSession.course, studentSearchQuery);
+  };
+
+  const toggleStudentToAdd = (studentId) => {
+    const normalizedId = Number(studentId);
+    setSelectedStudentIdsToAdd((prev) =>
+      prev.includes(normalizedId)
+        ? prev.filter((id) => id !== normalizedId)
+        : [...prev, normalizedId]
+    );
+  };
+
+  const handleSearchAvailableStudents = async (e) => {
+    e.preventDefault();
+    if (!modalSession) return;
+    await loadAvailableStudents(modalSession.course, studentSearchQuery);
+  };
+
+  const addSelectedStudentsToCourse = async () => {
+    if (!modalSession) {
+      setError('No session selected');
+      return;
+    }
+
+    if (selectedStudentIdsToAdd.length === 0) {
+      setError('Select at least one student to add');
+      return;
+    }
+
+    try {
+      setIsAddingStudents(true);
+      await courseApi.addStudents(modalSession.course, selectedStudentIdsToAdd);
+
+      const students = await fetchEnrolledStudentsForCourse(modalSession.course);
+      setModalStudents(students);
+      setSelectedStudentIdsToAdd([]);
+      setStudentSearchQuery('');
+      setShowAddStudentsPanel(false);
+      setSuccess('Students added to course successfully');
+      setTimeout(() => setSuccess(null), 3000);
+      setError(null);
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to add students to course'));
+    } finally {
+      setIsAddingStudents(false);
+    }
   };
 
   // Faculty: Update attendance status in modal
@@ -345,46 +442,32 @@ const AttendancePage = () => {
 
   // Render faculty view
   if (userType === 'faculty') {
-    if (viewMode === 'calendar') {
-      return (
-        <div className="attendance-page">
-          <div className="view-switcher">
-            <button 
-              className={`switch-btn ${viewMode === 'calendar' ? 'active' : ''}`}
-              onClick={() => setViewMode('calendar')}
-            >
-              📅 Calendar View
-            </button>
-            <button 
-              className={`switch-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              📋 List View
-            </button>
-          </div>
-          <AttendanceCalendar />
-        </div>
-      );
-    }
-
     return (
       <div className="attendance-page">
-        <div className="view-switcher">
+        <div className="view-switcher faculty-actions">
           <button 
-            className={`switch-btn ${viewMode === 'calendar' ? 'active' : ''}`}
-            onClick={() => setViewMode('calendar')}
+            className={`switch-btn ${facultyAction === 'course' ? 'active' : ''}`}
+            onClick={() => {
+              setFacultyAction('course');
+              setShowNewCourseForm(true);
+            }}
           >
-            📅 Calendar View
+            ➕ Create Course
           </button>
           <button 
-            className={`switch-btn ${viewMode === 'list' ? 'active' : ''}`}
-            onClick={() => setViewMode('list')}
+            className={`switch-btn ${facultyAction === 'session' ? 'active' : ''}`}
+            onClick={() => {
+              setFacultyAction('session');
+              if (selectedCourse) {
+                setShowNewSessionForm(true);
+              }
+            }}
           >
-            📋 List View
+            🗓️ Create Session
           </button>
         </div>
         <div className="attendance-container">
-          <h1>Attendance Management</h1>
+          <h1>Faculty Attendance Management</h1>
 
           {error && <div className="alert alert-error">{error}</div>}
           {success && <div className="alert alert-success">{success}</div>}
@@ -444,9 +527,9 @@ const AttendancePage = () => {
                   >
                     <div className="course-info">
                       <div className="course-code">{course.code}</div>
-                      <div className="course-name">{course.name}</div>
+                      <div className="course-name">{course.title}</div>
                       <div className="enrollments-count">
-                        {course.enrollments_count} students
+                        {course.branch || 'General'} | Sem {course.semester || '-'}
                       </div>
                     </div>
                   </div>
@@ -475,9 +558,16 @@ const AttendancePage = () => {
                   {showNewSessionForm && (
                     <form onSubmit={handleCreateSession} className="form-section">
                       <input
+                        type="text"
+                        placeholder="Session Title"
+                        value={newSession.title}
+                        onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
+                        required
+                      />
+                      <input
                         type="date"
-                        value={newSession.session_date}
-                        onChange={(e) => setNewSession({ ...newSession, session_date: e.target.value })}
+                        value={newSession.date}
+                        onChange={(e) => setNewSession({ ...newSession, date: e.target.value })}
                         required
                       />
                       <input
@@ -490,12 +580,6 @@ const AttendancePage = () => {
                         type="time"
                         value={newSession.end_time}
                         onChange={(e) => setNewSession({ ...newSession, end_time: e.target.value })}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Room"
-                        value={newSession.room}
-                        onChange={(e) => setNewSession({ ...newSession, room: e.target.value })}
                       />
                       <button type="submit" className="btn btn-success" disabled={loading}>
                         {loading ? 'Creating...' : 'Create Session'}
@@ -514,15 +598,12 @@ const AttendancePage = () => {
                           onClick={() => setSelectedSession(session)}
                         >
                           <div className="session-date">
-                            {new Date(session.session_date).toLocaleDateString()}
+                            {new Date(session.date).toLocaleDateString()}
                           </div>
+                          <div className="session-time">{session.title || 'Session'}</div>
                           <div className="session-time">
-                            {session.start_time} - {session.end_time || 'TBA'}
+                            {session.start_time || 'TBA'} - {session.end_time || 'TBA'}
                           </div>
-                          <div className="session-room">{session.room}</div>
-                          <span className={`status-badge status-${session.status}`}>
-                            {session.status}
-                          </span>
                         </div>
                         <button
                           className="btn btn-manual-mark btn-sm"
@@ -567,8 +648,8 @@ const AttendancePage = () => {
                     sessionAttendance.map((record) => (
                       <div key={record.id} className="attendance-record">
                         <div className="student-info">
-                          <div className="student-name">{record.student.full_name}</div>
-                          <div className="student-id">{record.student.username}</div>
+                          <div className="student-name">{record.student_name || 'Student'}</div>
+                          <div className="student-id">{record.student_email || `ID: ${record.student}`}</div>
                         </div>
                         <select
                           value={attendanceUpdates[record.id] || record.status}
@@ -596,9 +677,16 @@ const AttendancePage = () => {
               <div className="modal-header">
                 <h2>Mark Attendance</h2>
                 <h3 className="modal-subtitle">
-                  {modalSession && new Date(modalSession.session_date).toLocaleDateString()}{' '}
+                  {modalSession && new Date(modalSession.date).toLocaleDateString()}{' '}
                   - {modalSession?.start_time}
                 </h3>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={openAddStudentsPanel}
+                  disabled={isMarkingAttendance || isAddingStudents || !modalSession}
+                >
+                  + Add Students
+                </button>
                 <button 
                   className="modal-close"
                   onClick={closeManualMarkModal}
@@ -609,26 +697,99 @@ const AttendancePage = () => {
               </div>
 
               <div className="modal-body">
+                {showAddStudentsPanel && (
+                  <div className="form-section">
+                    <h4>Add Students To Course</h4>
+                    <form onSubmit={handleSearchAvailableStudents} className="manual-search-row">
+                      <input
+                        type="text"
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        placeholder="Search by name or email"
+                      />
+                      <button
+                        type="submit"
+                        className="btn btn-secondary btn-sm"
+                        disabled={isLoadingAvailableStudents}
+                      >
+                        {isLoadingAvailableStudents ? 'Searching...' : 'Search'}
+                      </button>
+                    </form>
+
+                    {isLoadingAvailableStudents ? (
+                      <p className="placeholder">Loading available students...</p>
+                    ) : availableStudents.length === 0 ? (
+                      <p className="placeholder">No available students found</p>
+                    ) : (
+                      <div className="students-attendance-list">
+                        {availableStudents.map((student) => (
+                          <label key={student.id} className="student-attendance-item">
+                            <input
+                              type="checkbox"
+                              checked={selectedStudentIdsToAdd.includes(student.id)}
+                              onChange={() => toggleStudentToAdd(student.id)}
+                              disabled={isAddingStudents}
+                            />
+                            <div className="student-details">
+                              <div className="student-name">{student.full_name || student.email}</div>
+                              <div className="student-id">{student.email}</div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="modal-footer">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setShowAddStudentsPanel(false);
+                          setSelectedStudentIdsToAdd([]);
+                        }}
+                        disabled={isAddingStudents}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="btn btn-success"
+                        onClick={addSelectedStudentsToCourse}
+                        disabled={isAddingStudents || selectedStudentIdsToAdd.length === 0}
+                        type="button"
+                      >
+                        {isAddingStudents ? 'Adding...' : `Add Selected (${selectedStudentIdsToAdd.length})`}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {modalStudents.length === 0 ? (
-                  <p className="placeholder">No students enrolled in this course</p>
+                  <div>
+                    <p className="placeholder">No students enrolled in this course</p>
+                    {!showAddStudentsPanel && (
+                      <button className="btn btn-primary btn-sm" onClick={openAddStudentsPanel} type="button">
+                        + Add Students
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <div className="students-attendance-list">
                     {modalStudents.map((student) => (
                       <div key={student.id} className="student-attendance-item">
                         <div className="student-details">
                           <div className="student-name">
-                            {student.user?.full_name}
+                            {student.student?.full_name || 'Student'}
                           </div>
                           <div className="student-id">
-                            {student.id}
+                            {student.student?.email || student.student?.id}
                           </div>
                         </div>
                         <div className="status-buttons">
                           <button
                             className={`status-btn present ${
-                              modalAttendanceStatus[student.user?.id] === 'present' ? 'active' : ''
+                              modalAttendanceStatus[student.student?.id] === 'present' ? 'active' : ''
                             }`}
-                            onClick={() => handleModalAttendanceStatusChange(student.user?.id, 'present')}
+                            onClick={() => handleModalAttendanceStatusChange(student.student?.id, 'present')}
                             disabled={isMarkingAttendance}
                             title="Present"
                           >
@@ -636,9 +797,9 @@ const AttendancePage = () => {
                           </button>
                           <button
                             className={`status-btn absent ${
-                              modalAttendanceStatus[student.user?.id] === 'absent' ? 'active' : ''
+                              modalAttendanceStatus[student.student?.id] === 'absent' ? 'active' : ''
                             }`}
-                            onClick={() => handleModalAttendanceStatusChange(student.user?.id, 'absent')}
+                            onClick={() => handleModalAttendanceStatusChange(student.student?.id, 'absent')}
                             disabled={isMarkingAttendance}
                             title="Absent"
                           >
@@ -646,9 +807,9 @@ const AttendancePage = () => {
                           </button>
                           <button
                             className={`status-btn late ${
-                              modalAttendanceStatus[student.user?.id] === 'late' ? 'active' : ''
+                              modalAttendanceStatus[student.student?.id] === 'late' ? 'active' : ''
                             }`}
-                            onClick={() => handleModalAttendanceStatusChange(student.user?.id, 'late')}
+                            onClick={() => handleModalAttendanceStatusChange(student.student?.id, 'late')}
                             disabled={isMarkingAttendance}
                             title="Late"
                           >
@@ -656,9 +817,9 @@ const AttendancePage = () => {
                           </button>
                           <button
                             className={`status-btn excused ${
-                              modalAttendanceStatus[student.user?.id] === 'excused' ? 'active' : ''
+                              modalAttendanceStatus[student.student?.id] === 'excused' ? 'active' : ''
                             }`}
-                            onClick={() => handleModalAttendanceStatusChange(student.user?.id, 'excused')}
+                            onClick={() => handleModalAttendanceStatusChange(student.student?.id, 'excused')}
                             disabled={isMarkingAttendance}
                             title="Excused"
                           >

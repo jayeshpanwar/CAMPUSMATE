@@ -92,7 +92,7 @@ class LeaveRequestViewSet(viewsets.ViewSet):
         return Response(serializer.data)
     
     def create(self, request):
-        """Create a new leave request"""
+        """Create a new leave declaration for faculty."""
         if request.user.role != 'faculty':
             return Response(
                 {'error': 'Only faculty can request leave'},
@@ -105,13 +105,35 @@ class LeaveRequestViewSet(viewsets.ViewSet):
         leave_request = LeaveRequest.objects.create(
             faculty=request.user,
             requested_by=request.user,
+            status='approved',
+            approved_by=request.user,
+            approved_at=timezone.now(),
             **serializer.validated_data
         )
+
+        # Keep faculty availability in sync so students immediately see leave status.
+        availability, _ = FacultyAvailability.objects.get_or_create(faculty=request.user)
+        availability.is_on_leave = True
+        availability.is_available_on_campus = False
+        availability.updated_by = request.user
+        availability.save()
         
         return Response(
             LeaveRequestDetailSerializer(leave_request).data,
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=False, methods=['get'])
+    def active_leaves(self, request):
+        """List approved active/upcoming leaves for visibility in student panel."""
+        today = timezone.localdate()
+        leave_requests = LeaveRequest.objects.filter(
+            status='approved',
+            end_date__gte=today
+        ).order_by('start_date', 'faculty__first_name', 'faculty__last_name')
+
+        serializer = LeaveRequestListSerializer(leave_requests, many=True)
+        return Response(serializer.data)
     
     def retrieve(self, request, pk=None):
         """Get a specific leave request"""

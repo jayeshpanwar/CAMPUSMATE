@@ -21,7 +21,7 @@ const RolePortal = () => {
       <div className="role-portal-content">
         <div className="role-portal-header">
           <h1>CampusMate</h1>
-          <p>Select your role to continue</p>
+          <p>Different roles. Different tasks. One CampusMate portal.</p>
         </div>
 
         <div className="role-cards-container">

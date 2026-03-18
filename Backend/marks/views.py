@@ -108,9 +108,9 @@ def _analyze_marks(marks: dict, target_final: float) -> dict:
     }
 
 
-def _call_gemini(marks: dict, analysis: dict, target_final: float) -> dict:
+def _call_gemini(marks: dict, analysis: dict, target_final: float, weeks_count: int = 6) -> dict:
     """
-    Generates a 6-week JSON study plan.
+    Generates a JSON study plan for requested duration.
     Order of preference:
     1. Local trained ML model
     2. Gemini API
@@ -125,13 +125,13 @@ def _call_gemini(marks: dict, analysis: dict, target_final: float) -> dict:
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
         logger.warning("GEMINI_API_KEY not set – returning static fallback plan.")
-        return _static_fallback_plan(analysis)
+        return _static_fallback_plan(analysis, weeks_count=weeks_count)
 
     try:
         import google.generativeai as genai  # type: ignore
     except ImportError:
         logger.warning("google-generativeai not installed – returning static fallback plan.")
-        return _static_fallback_plan(analysis)
+        return _static_fallback_plan(analysis, weeks_count=weeks_count)
 
     weak_subjects_str = ", ".join(analysis["weak_subjects"]) if analysis["weak_subjects"] else "None"
     marks_str = json.dumps(marks, indent=2)
@@ -144,12 +144,13 @@ You are an expert academic coach. A student has the following mid-semester marks
 Weak subjects (below 60%): {weak_subjects_str}
 Target final exam score: {target_final}%
 
-Create a personalised 6-week study plan. Rules:
+Create a personalised {weeks_count}-week study plan. Rules:
 - Daily study budget: 2 hours.
 - Allocate 60% of daily time (72 min) to weak subjects, 40% to the rest.
-- Week 1-2: Foundation topics. Include 2 free Khan Academy / NPTEL resource links per subject.
-- Week 3-4: Practice papers and maintaining an error log.
-- Week 5-6: Mock tests and full revision.
+- Split into 3 phases across the full duration:
+    - Early phase: Foundation topics. Include 2 free Khan Academy / NPTEL resource links per subject.
+    - Mid phase: Practice papers and maintaining an error log.
+    - Final phase: Mock tests and full revision.
 
 Return ONLY valid JSON in exactly this schema (no prose, no markdown fences):
 {{
@@ -171,7 +172,7 @@ Return ONLY valid JSON in exactly this schema (no prose, no markdown fences):
     }}
   ]
 }}
-Include all 6 weeks. Each week must have all 7 days.
+Include all {weeks_count} weeks. Each week must have all 7 days.
 """
 
     try:
@@ -194,32 +195,31 @@ Include all 6 weeks. Each week must have all 7 days.
 
     except json.JSONDecodeError as exc:
         logger.error("Gemini returned non-JSON: %s", exc)
-        return _static_fallback_plan(analysis)
+        return _static_fallback_plan(analysis, weeks_count=weeks_count)
     except Exception as exc:
         logger.error("Gemini API error: %s", exc)
-        return _static_fallback_plan(analysis)
+        return _static_fallback_plan(analysis, weeks_count=weeks_count)
 
 
-def _static_fallback_plan(analysis: dict) -> dict:
-    """Returns a generic 6-week plan when Gemini is unavailable."""
+def _static_fallback_plan(analysis: dict, weeks_count: int = 6) -> dict:
+    """Returns a generic plan when Gemini is unavailable."""
     weak = analysis.get("weak_subjects", [])
     if not weak:
         weak = list(analysis.get("subject_details", [{"subject": "All Subjects"}])[0:2])
         weak = [s["subject"] if isinstance(s, dict) else s for s in weak]
 
-    phase_map = {
-        1: "Foundation building",
-        2: "Foundation building",
-        3: "Practice papers & error log",
-        4: "Practice papers & error log",
-        5: "Mock tests & revision",
-        6: "Mock tests & revision",
-    }
+    first_phase_end = max(1, weeks_count // 3)
+    second_phase_end = max(first_phase_end + 1, (2 * weeks_count) // 3)
 
     weeks = []
     days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    for w in range(1, 7):
-        focus = phase_map[w]
+    for w in range(1, weeks_count + 1):
+        if w <= first_phase_end:
+            focus = "Foundation building"
+        elif w <= second_phase_end:
+            focus = "Practice papers & error log"
+        else:
+            focus = "Mock tests & revision"
         daily_tasks = []
         for day in days_of_week:
             tasks = []
@@ -236,7 +236,11 @@ def _static_fallback_plan(analysis: dict) -> dict:
             })
         weeks.append({"week": w, "focus": focus, "daily_tasks": daily_tasks, "resources": resources})
 
-    return {"weeks": weeks, "note": "AI plan unavailable – using generic template. Set GEMINI_API_KEY to enable personalised plans."}
+    return {
+        "weeks": weeks,
+        "weeks_count": weeks_count,
+        "note": "AI plan unavailable – using generic template. Set GEMINI_API_KEY to enable personalised plans.",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -325,6 +329,7 @@ class GenerateStudyPlanView(APIView):
 
         data = serializer.validated_data
         plan_id = data.get("study_plan_id")
+        weeks_count = data.get("weeks_count", 6)
 
         if plan_id:
             plan = get_object_or_404(StudyPlan, id=plan_id, student=request.user)
@@ -354,7 +359,14 @@ class GenerateStudyPlanView(APIView):
                 },
             )
 
-        ai_plan = _call_gemini(marks, analysis, plan.target_final if plan_id else target_final)
+        ai_plan = _call_gemini(
+            marks,
+            analysis,
+            plan.target_final if plan_id else target_final,
+            weeks_count=weeks_count,
+        )
+        if isinstance(ai_plan, dict):
+            ai_plan["weeks_count"] = len(ai_plan.get("weeks", [])) if isinstance(ai_plan.get("weeks"), list) else weeks_count
         plan.study_plan = ai_plan
         plan.analysis = analysis
         plan.save(update_fields=["study_plan", "analysis", "updated_at"])

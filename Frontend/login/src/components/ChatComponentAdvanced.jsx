@@ -13,7 +13,7 @@ import {
   TypingIndicator,
 } from "@chatscope/chat-ui-kit-react";
 import ChatUISetup from './ChatUISetup';
-import apiClient from "./api";
+import apiClient, { createChatGroup, getAvailableChatUsers } from "./api";
 import "./ChatComponentAdvanced.css";
 
 function ChatComponentAdvanced() {
@@ -25,10 +25,18 @@ function ChatComponentAdvanced() {
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDescription, setNewGroupDescription] = useState("");
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState([]);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const pollingIntervalRef = useRef(null);
 
   const userId = localStorage.getItem("user_id");
   const userName = localStorage.getItem("user_name");
+  const userRole = (localStorage.getItem("role") || "").toLowerCase();
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -147,6 +155,95 @@ function ChatComponentAdvanced() {
     setError(null);
   };
 
+  const fetchAvailableUsers = useCallback(async (query = "") => {
+    try {
+      const response = await getAvailableChatUsers(query);
+      setAvailableUsers(response.data || []);
+    } catch (err) {
+      console.error("Error fetching available users:", err);
+      setError("Failed to load users for group creation");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showCreateGroupModal) {
+      fetchAvailableUsers(userSearchQuery);
+    }
+  }, [showCreateGroupModal, userSearchQuery, fetchAvailableUsers]);
+
+  const toggleMemberSelection = (memberId) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
+    );
+  };
+
+  const closeCreateGroupModal = () => {
+    setShowCreateGroupModal(false);
+    setNewGroupName("");
+    setNewGroupDescription("");
+    setSelectedMemberIds([]);
+    setUserSearchQuery("");
+  };
+
+  const handleCreateGroup = async () => {
+    const trimmedName = newGroupName.trim();
+    if (!trimmedName) {
+      setError("Group name is required");
+      return;
+    }
+
+    if (userRole === "student") {
+      const selectedUsers = availableUsers.filter((user) => selectedMemberIds.includes(user.id));
+      const hasFaculty = selectedUsers.some((user) => user.role === "faculty");
+      if (!hasFaculty) {
+        setError("Students must include at least one faculty member in the group");
+        return;
+      }
+    }
+
+    try {
+      setIsCreatingGroup(true);
+      setError(null);
+
+      const response = await createChatGroup(
+        trimmedName,
+        newGroupDescription.trim(),
+        selectedMemberIds,
+        []
+      );
+
+      await fetchConversations();
+
+      if (response?.data?.id) {
+        setSelectedConversation((prev) => {
+          if (prev && prev.id === response.data.id) {
+            return prev;
+          }
+          return {
+            id: response.data.id,
+            name: response.data.name,
+            description: response.data.description || "",
+            avatar: "👥",
+            messages: [],
+            participants: response.data.memberships ? response.data.memberships.length : 1,
+          };
+        });
+      }
+
+      closeCreateGroupModal();
+    } catch (err) {
+      const backendError = err?.response?.data;
+      const message =
+        backendError?.non_field_errors?.[0] ||
+        backendError?.detail ||
+        (typeof backendError === "string" ? backendError : null) ||
+        "Failed to create group";
+      setError(message);
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
+
   const filteredConversations = conversations.filter((conv) =>
     conv.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -176,6 +273,16 @@ function ChatComponentAdvanced() {
             <span className="stat">
               <strong>{conversations.reduce((acc, c) => acc + (c.participants || 0), 0)}</strong> Total Participants
             </span>
+            <button
+              type="button"
+              className="create-group-btn"
+              onClick={() => {
+                setError(null);
+                setShowCreateGroupModal(true);
+              }}
+            >
+              + Create Group
+            </button>
           </div>
         </div>
       </div>
@@ -313,6 +420,83 @@ function ChatComponentAdvanced() {
           </ChatContainer>
         </MainContainer>
       </div>
+
+      {showCreateGroupModal && (
+        <div className="group-modal-overlay" onClick={closeCreateGroupModal}>
+          <div className="group-modal-card" onClick={(e) => e.stopPropagation()}>
+            <h2>Create New Group</h2>
+            <p className="group-modal-subtitle">
+              Everyone can create groups. Students must include at least one faculty member.
+            </p>
+
+            <label className="group-modal-label" htmlFor="group-name">Group Name</label>
+            <input
+              id="group-name"
+              className="group-modal-input"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="Enter group name"
+            />
+
+            <label className="group-modal-label" htmlFor="group-description">Description (optional)</label>
+            <textarea
+              id="group-description"
+              className="group-modal-input group-modal-textarea"
+              value={newGroupDescription}
+              onChange={(e) => setNewGroupDescription(e.target.value)}
+              placeholder="What is this group about?"
+            />
+
+            <label className="group-modal-label" htmlFor="user-search">Add Members</label>
+            <input
+              id="user-search"
+              className="group-modal-input"
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              placeholder="Search by name or email"
+            />
+
+            <div className="group-members-list">
+              {availableUsers.length === 0 ? (
+                <p className="group-members-empty">No users found.</p>
+              ) : (
+                availableUsers.map((user) => {
+                  const isSelected = selectedMemberIds.includes(user.id);
+                  return (
+                    <button
+                      type="button"
+                      key={user.id}
+                      className={`group-member-item ${isSelected ? "selected" : ""}`}
+                      onClick={() => toggleMemberSelection(user.id)}
+                    >
+                      <span className="group-member-name">
+                        {user.first_name || user.last_name
+                          ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+                          : user.email}
+                      </span>
+                      <span className="group-member-meta">{user.role} | {user.email}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="group-modal-actions">
+              <button type="button" className="group-modal-cancel" onClick={closeCreateGroupModal}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="group-modal-create"
+                onClick={handleCreateGroup}
+                disabled={isCreatingGroup}
+              >
+                {isCreatingGroup ? "Creating..." : "Create Group"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

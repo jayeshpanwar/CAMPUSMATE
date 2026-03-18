@@ -24,6 +24,7 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = ['id', 'title', 'code', 'faculty', 'faculty_name', 'description', 
                   'branch', 'semester', 'start_date', 'end_date', 'sessions_count', 'created_at', 'updated_at']
+        read_only_fields = ['faculty', 'faculty_name', 'sessions_count', 'created_at', 'updated_at']
     
     def get_sessions_count(self, obj):
         return obj.attendance_sessions.count()
@@ -50,6 +51,7 @@ class AttendanceSessionSerializer(serializers.ModelSerializer):
         model = AttendanceSession
         fields = ['id', 'course', 'course_code', 'course_title', 'course_branch', 'faculty', 'faculty_name', 
                   'title', 'date', 'start_time', 'end_time', 'is_processed', 'attendance_count', 'created_at', 'updated_at']
+        read_only_fields = ['faculty', 'faculty_name', 'attendance_count', 'is_processed', 'created_at', 'updated_at']
     
     def get_attendance_count(self, obj):
         return obj.records.count()

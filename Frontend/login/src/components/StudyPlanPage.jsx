@@ -1,5 +1,5 @@
 // src/components/StudyPlanPage.jsx
-// AI-powered Mid-Sem Marks Analyzer + 6-Week Study Plan Generator
+// AI-powered Mid-Sem Marks Analyzer + configurable duration Study Plan Generator
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from './api';
@@ -97,7 +97,7 @@ const extractApiError = (error, fallbackMessage) => {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function MarksInputForm({ onAnalyze, loading }) {
+function MarksInputForm({ onAnalyze, loading, initialWeeks = 6 }) {
   const [subjects, setSubjects] = useState([
     { name: '', marks: '' },
     { name: '', marks: '' },
@@ -105,6 +105,7 @@ function MarksInputForm({ onAnalyze, loading }) {
   ]);
   const [semester, setSemester] = useState('Sem 4');
   const [target, setTarget] = useState(80);
+  const [weeksCount, setWeeksCount] = useState(initialWeeks);
 
   const addRow = () => setSubjects(prev => [...prev, { name: '', marks: '' }]);
   const removeRow = (i) => setSubjects(prev => prev.filter((_, idx) => idx !== i));
@@ -117,7 +118,12 @@ function MarksInputForm({ onAnalyze, loading }) {
     if (filled.length === 0) return;
     const marksObj = {};
     filled.forEach(s => { marksObj[s.name.trim()] = parseFloat(s.marks); });
-    onAnalyze({ marks: marksObj, semester, target_final: parseFloat(target) });
+    onAnalyze({
+      marks: marksObj,
+      semester,
+      target_final: parseFloat(target),
+      weeks_count: parseInt(weeksCount, 10),
+    });
   };
 
   return (
@@ -129,12 +135,12 @@ function MarksInputForm({ onAnalyze, loading }) {
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Enter Mid-Sem Marks</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">AI will analyse and build your 6-week recovery plan</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">AI will analyse and build your personalised study plan</p>
         </div>
       </div>
 
-      {/* Semester & Target row */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Semester, Target and Duration row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Semester</label>
           <input
@@ -150,6 +156,14 @@ function MarksInputForm({ onAnalyze, loading }) {
           <input
             type="number" min="0" max="100" value={target}
             onChange={e => setTarget(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Duration (weeks)</label>
+          <input
+            type="number" min="1" max="24" value={weeksCount}
+            onChange={e => setWeeksCount(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -381,6 +395,7 @@ export default function StudyPlanPage() {
   const [pastPlans, setPastPlans] = useState([]);
   const [loadingPast, setLoadingPast] = useState(true);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [selectedWeeks, setSelectedWeeks] = useState(6);
 
   // Fetch existing plans on mount
   useEffect(() => {
@@ -391,13 +406,15 @@ export default function StudyPlanPage() {
   }, []);
 
   // ── Analyze marks ──────────────────────────────────────────────────────────
-  const handleAnalyze = async ({ marks, semester, target_final }) => {
+  const handleAnalyze = async ({ marks, semester, target_final, weeks_count }) => {
     setLoadingAnalysis(true);
     setError('');
     try {
       const res = await apiClient.post('marks/analyze/', { marks, semester, target_final });
+      const normalizedWeeks = Math.min(24, Math.max(1, Number(weeks_count) || 6));
       setAnalysis(res.data.analysis);
-      setPlanData({ id: res.data.study_plan_id, midsem_marks: marks, semester, target_final, task_progress: {}, study_plan: null });
+      setSelectedWeeks(normalizedWeeks);
+      setPlanData({ id: res.data.study_plan_id, midsem_marks: marks, semester, target_final, weeks_count: normalizedWeeks, task_progress: {}, study_plan: null });
       setStep('analysis');
     } catch (e) {
       setError(extractApiError(e, 'Analysis failed. Please try again.'));
@@ -411,8 +428,14 @@ export default function StudyPlanPage() {
     setLoadingPlan(true);
     setError('');
     try {
-      const res = await apiClient.post('marks/generate-study-plan/', { study_plan_id: planData.id });
-      setPlanData(res.data);
+      const weeksCount = Math.min(24, Math.max(1, Number(planData?.weeks_count || selectedWeeks || 6)));
+      const res = await apiClient.post('marks/generate-study-plan/', {
+        study_plan_id: planData.id,
+        weeks_count: weeksCount,
+      });
+      const computedWeeks = res.data?.study_plan?.weeks_count || res.data?.study_plan?.weeks?.length || weeksCount;
+      setPlanData((prev) => ({ ...res.data, weeks_count: computedWeeks || prev?.weeks_count || 6 }));
+      setSelectedWeeks(computedWeeks || 6);
       setAnalysis(res.data.analysis);
       setPastPlans(prev => [res.data, ...prev.filter(p => p.id !== res.data.id)]);
       setStep('plan');
@@ -425,7 +448,9 @@ export default function StudyPlanPage() {
 
   // ── Load a previously saved plan ──────────────────────────────────────────
   const loadPlan = async (plan) => {
-    setPlanData(plan);
+    const inferredWeeks = plan?.study_plan?.weeks_count || plan?.study_plan?.weeks?.length || plan?.weeks_count || 6;
+    setSelectedWeeks(inferredWeeks);
+    setPlanData({ ...plan, weeks_count: inferredWeeks });
     setAnalysis(plan.analysis);
     setStep(plan.study_plan ? 'plan' : 'analysis');
   };
@@ -567,7 +592,7 @@ ${w.resources?.length ? `<p><strong>Resources:</strong> ${w.resources.map(r => `
             {/* Input / Analysis card */}
             <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm p-6">
               {step === 'input' && (
-                <MarksInputForm onAnalyze={handleAnalyze} loading={loadingAnalysis} />
+                <MarksInputForm onAnalyze={handleAnalyze} loading={loadingAnalysis} initialWeeks={selectedWeeks} />
               )}
 
               {(step === 'analysis' || step === 'plan') && analysis && (
@@ -578,6 +603,22 @@ ${w.resources?.length ? `<p><strong>Resources:</strong> ${w.resources.map(r => `
                       className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">← Re-enter marks</button>
                   </div>
                   <AnalysisCard analysis={analysis} />
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Duration (weeks)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="24"
+                      value={planData?.weeks_count || selectedWeeks}
+                      onChange={(e) => {
+                        const value = Math.min(24, Math.max(1, Number(e.target.value) || 6));
+                        setSelectedWeeks(value);
+                        setPlanData((prev) => ({ ...(prev || {}), weeks_count: value }));
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
 
                   {step === 'analysis' && (
                     <button onClick={handleGeneratePlan} disabled={loadingPlan}
@@ -633,7 +674,7 @@ ${w.resources?.length ? `<p><strong>Resources:</strong> ${w.resources.map(r => `
             </div>
           </div>
 
-          {/* ── Right panel: 6-week plan ── */}
+          {/* ── Right panel: generated plan ── */}
           <div className="lg:col-span-2">
             {step === 'input' && (
               <div className="h-full flex items-center justify-center rounded-2xl bg-white dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
@@ -641,7 +682,7 @@ ${w.resources?.length ? `<p><strong>Resources:</strong> ${w.resources.map(r => `
                   <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center mx-auto">
                     <BrainIcon className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your 6-Week Plan Appears Here</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your Study Plan Appears Here</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">Enter your mid-sem marks out of 20 on the left and click <strong>Analyse & Generate Plan</strong> to get started.</p>
                 </div>
               </div>
@@ -654,7 +695,7 @@ ${w.resources?.length ? `<p><strong>Resources:</strong> ${w.resources.map(r => `
                     <SparklesIcon className="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-pulse" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ready to Generate</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">Analysis complete. Click <strong>Generate AI Plan</strong> to build your personalised 6-week study timeline with Gemini AI.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">Analysis complete. Click <strong>Generate AI Plan</strong> to build your personalised study timeline with Gemini AI.</p>
                 </div>
               </div>
             )}
@@ -664,7 +705,7 @@ ${w.resources?.length ? `<p><strong>Resources:</strong> ${w.resources.map(r => `
                 {/* Plan header */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">6-Week Study Plan</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{planData?.study_plan?.weeks?.length || planData?.weeks_count || selectedWeeks}-Week Study Plan</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {planData.semester} · Target {planData.target_final}% · {overallProgress}% complete
                     </p>

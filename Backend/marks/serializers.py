@@ -64,6 +64,7 @@ class GenerateStudyPlanInputSerializer(serializers.Serializer):
     )
     semester = serializers.CharField(max_length=20, required=False)
     target_final = serializers.FloatField(min_value=0, max_value=100, default=80.0, required=False)
+    weeks_count = serializers.IntegerField(min_value=1, max_value=24, default=6, required=False)
 
 
 class TaskProgressUpdateSerializer(serializers.Serializer):

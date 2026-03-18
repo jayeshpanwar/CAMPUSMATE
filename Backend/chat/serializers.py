@@ -4,9 +4,11 @@ from users.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'role']
+        fields = ['id', 'email', 'first_name', 'last_name', 'full_name', 'role']
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
@@ -116,27 +118,25 @@ class ChatGroupCreateSerializer(serializers.ModelSerializer):
         """Validate that students include at least one faculty member."""
         request = self.context.get('request')
         if request and hasattr(request, 'user') and request.user and hasattr(request.user, 'role'):
-            # Check if user is a student (has role attribute and it equals 'student')
             if request.user.role == 'student':
-                member_ids = data.get('member_ids', [])
-                member_emails = data.get('member_emails', [])
-                
-                # Get faculty count from IDs and emails
-                faculty_from_ids = User.objects.filter(
-                    id__in=member_ids,
-                    role='faculty'
-                ).count()
-                
-                faculty_from_emails = User.objects.filter(
-                    email__in=member_emails,
-                    role='faculty'
-                ).count()
-                
-                total_faculty = faculty_from_ids + faculty_from_emails
-                
-                if total_faculty == 0 and (member_ids or member_emails):
+                member_ids = list({int(member_id) for member_id in data.get('member_ids', [])})
+                member_emails = list({email.strip().lower() for email in data.get('member_emails', []) if email})
+
+                if not member_ids and not member_emails:
                     raise serializers.ValidationError(
                         'Student groups must include at least one faculty member.'
                     )
+
+                invited_users = User.objects.filter(id__in=member_ids) | User.objects.filter(email__in=member_emails)
+                invited_users = invited_users.distinct()
+
+                if not invited_users.filter(role='faculty').exists():
+                    raise serializers.ValidationError(
+                        'Student groups must include at least one faculty member.'
+                    )
+
+                # Keep normalized values for create flow.
+                data['member_ids'] = member_ids
+                data['member_emails'] = member_emails
         
         return data

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from .models import ChatGroup, ChatMessage, GroupMembership
 from .serializers import (
     ChatGroupDetailSerializer,
@@ -10,7 +11,8 @@ from .serializers import (
     ChatMessageSerializer,
     ChatMessageCreateSerializer,
     ChatGroupCreateSerializer,
-    GroupMembershipSerializer
+    GroupMembershipSerializer,
+    UserSerializer,
 )
 from users.models import User
 from notices.services import dispatch_due_reminders
@@ -92,6 +94,28 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
             ChatGroupListSerializer(group).data,
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=False, methods=['get'])
+    def available_users(self, request):
+        """Return active users available for adding to a group."""
+        query = request.query_params.get('q', '').strip()
+        role = request.query_params.get('role', '').strip().lower()
+
+        users_qs = User.objects.filter(is_active=True).exclude(id=request.user.id)
+
+        if role in {'student', 'faculty', 'admin'}:
+            users_qs = users_qs.filter(role=role)
+
+        if query:
+            users_qs = users_qs.filter(
+                Q(email__icontains=query)
+                | Q(first_name__icontains=query)
+                | Q(last_name__icontains=query)
+                | Q(username__icontains=query)
+            )
+
+        users_qs = users_qs.order_by('first_name', 'last_name', 'email').distinct()[:100]
+        return Response(UserSerializer(users_qs, many=True).data)
     
     @action(detail=True, methods=['post'])
     def send_message(self, request, pk=None):

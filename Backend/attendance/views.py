@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -44,6 +46,19 @@ class CourseViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(semester=semester)
         
         return queryset.distinct()
+
+    def create(self, request, *args, **kwargs):
+        """Create a course for the authenticated faculty/admin user."""
+        if request.user.role not in ['faculty', 'admin']:
+            return Response(
+                {'error': 'Only faculty/admin can create courses'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(faculty=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def available_branches(self, request):
@@ -81,13 +96,79 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def add_students(self, request, pk=None):
         course = self.get_object()
-        student_ids = request.data.get('student_ids', [])
-        for student_id in student_ids:
-            CourseEnrollment.objects.get_or_create(
-                course=course,
-                student_id=student_id
+        if request.user.role not in ['faculty', 'admin']:
+            return Response(
+                {'error': 'Only faculty/admin can add students'},
+                status=status.HTTP_403_FORBIDDEN
             )
-        return Response({'status': 'Students added'})
+
+        if request.user.role == 'faculty' and course.faculty_id != request.user.id:
+            return Response(
+                {'error': 'You can add students only to your own courses'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        student_ids = request.data.get('student_ids', [])
+        if not isinstance(student_ids, list) or not student_ids:
+            return Response(
+                {'error': 'student_ids (non-empty list) is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        valid_students = User.objects.filter(id__in=student_ids, role='student', is_active=True)
+        valid_student_map = {student.id: student for student in valid_students}
+
+        created_count = 0
+        skipped_ids = []
+        for student_id in student_ids:
+            if student_id not in valid_student_map:
+                skipped_ids.append(student_id)
+                continue
+
+            _, created = CourseEnrollment.objects.get_or_create(
+                course=course,
+                student=valid_student_map[student_id]
+            )
+            if created:
+                created_count += 1
+
+        return Response({
+            'status': 'Students processed',
+            'added_count': created_count,
+            'skipped_student_ids': skipped_ids,
+        })
+
+    @action(detail=True, methods=['get'])
+    def available_students(self, request, pk=None):
+        """List active students not yet enrolled in this course."""
+        course = self.get_object()
+
+        if request.user.role not in ['faculty', 'admin']:
+            return Response(
+                {'error': 'Only faculty/admin can view available students'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if request.user.role == 'faculty' and course.faculty_id != request.user.id:
+            return Response(
+                {'error': 'You can view students only for your own courses'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        query = request.query_params.get('q', '').strip()
+        enrolled_student_ids = course.enrollments.values_list('student_id', flat=True)
+
+        students_qs = User.objects.filter(role='student', is_active=True).exclude(id__in=enrolled_student_ids)
+
+        if query:
+            students_qs = students_qs.filter(
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query) |
+                Q(email__icontains=query)
+            )
+
+        students_qs = students_qs.order_by('first_name', 'last_name', 'email')[:100]
+        return Response(UserSerializer(students_qs, many=True).data)
 
     @action(detail=True, methods=['get'])
     def enrolled_students(self, request, pk=None):
@@ -113,6 +194,27 @@ class AttendanceSessionViewSet(viewsets.ModelViewSet):
     queryset = AttendanceSession.objects.all()
     serializer_class = AttendanceSessionSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        """Create a session for the authenticated faculty/admin user."""
+        if request.user.role not in ['faculty', 'admin']:
+            return Response(
+                {'error': 'Only faculty/admin can create sessions'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        course = serializer.validated_data['course']
+        if request.user.role == 'faculty' and course.faculty_id != request.user.id:
+            return Response(
+                {'error': 'You can create sessions only for your own courses'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer.save(faculty=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
         user = self.request.user

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getGroupMessages, sendGroupMessage } from './api';
+import { createChatGroup, getAvailableChatUsers, getGroupMessages, sendGroupMessage } from './api';
 
 const PlusIcon = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -23,41 +23,142 @@ const RefreshIcon = ({ className }) => (
 
 const normalizeName = (text) => (text || '').toString().trim().toLowerCase();
 
-const NewConversationModal = ({ onClose, onStartConversation, allUsers, currentUser }) => {
+const CreateGroupModal = ({ onClose, onCreateGroup, currentUser }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const filteredUsers = (allUsers || []).filter((user) => {
-        const currentName = normalizeName(currentUser?.name);
-        const candidate = normalizeName(user?.name);
-        return candidate.includes(normalizeName(searchTerm)) && candidate !== currentName;
-    });
+    const [availableUsers, setAvailableUsers] = useState([]);
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
+    const [groupName, setGroupName] = useState('');
+    const [description, setDescription] = useState('');
+    const [error, setError] = useState('');
+    const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+
+    useEffect(() => {
+        const loadUsers = async () => {
+            try {
+                setIsLoadingUsers(true);
+                const response = await getAvailableChatUsers(searchTerm);
+                setAvailableUsers(response.data || []);
+            } catch (err) {
+                setError('Failed to load users.');
+            } finally {
+                setIsLoadingUsers(false);
+            }
+        };
+        loadUsers();
+    }, [searchTerm]);
+
+    const filteredUsers = availableUsers;
+
+    const toggleUser = (userId) => {
+        setSelectedUserIds((prev) => (
+            prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+        ));
+    };
+
+    const handleCreate = async () => {
+        const trimmedName = groupName.trim();
+        if (!trimmedName) {
+            setError('Group name is required.');
+            return;
+        }
+
+        if ((currentUser?.role || '').toLowerCase() === 'student') {
+            const selectedUsers = availableUsers.filter((user) => selectedUserIds.includes(user.id));
+            const hasFaculty = selectedUsers.some((user) => user.role === 'faculty');
+            if (!hasFaculty) {
+                setError('Students must add at least one faculty member.');
+                return;
+            }
+        }
+
+        try {
+            setIsCreating(true);
+            setError('');
+            const response = await createChatGroup(trimmedName, description.trim(), selectedUserIds, []);
+            onCreateGroup(response.data);
+            onClose();
+        } catch (err) {
+            const payload = err?.response?.data;
+            const message =
+                payload?.non_field_errors?.[0] ||
+                payload?.detail ||
+                (typeof payload === 'string' ? payload : null) ||
+                'Failed to create group.';
+            setError(message);
+        } finally {
+            setIsCreating(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col h-[65vh]">
                 <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                    <h3 className="text-xl font-bold">New Conversation</h3>
+                    <h3 className="text-xl font-bold">Create Group</h3>
                     <button onClick={onClose}><XIcon className="w-6 h-6 text-gray-500" /></button>
                 </div>
                 <div className="flex-shrink-0">
-                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search for users..." className="w-full border border-gray-300 rounded-md shadow-sm p-2" />
+                    <input
+                        type="text"
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        placeholder="Group name"
+                        className="w-full border border-gray-300 rounded-md shadow-sm p-2 mb-2"
+                    />
+                    <input
+                        type="text"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Description (optional)"
+                        className="w-full border border-gray-300 rounded-md shadow-sm p-2 mb-2"
+                    />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search users..."
+                        className="w-full border border-gray-300 rounded-md shadow-sm p-2"
+                    />
+                    {(currentUser?.role || '').toLowerCase() === 'student' && (
+                        <p className="text-xs text-amber-700 mt-2">You must select at least one faculty member.</p>
+                    )}
                 </div>
                 <div className="mt-4 flex-1 overflow-y-auto">
-                    {filteredUsers.length > 0 ? (
+                    {isLoadingUsers ? (
+                        <p className="p-4 text-center text-gray-500">Loading users...</p>
+                    ) : filteredUsers.length > 0 ? (
                         <ul className="divide-y divide-gray-200">
                             {filteredUsers.map((user) => (
-                                <li key={user.name} onClick={() => onStartConversation(user)} className="p-3 flex items-center space-x-3 hover:bg-gray-50 cursor-pointer rounded-lg">
-                                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold">{user.initials}</div>
+                                <li key={user.id} onClick={() => toggleUser(user.id)} className="p-3 flex items-center space-x-3 hover:bg-gray-50 cursor-pointer rounded-lg">
+                                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold">
+                                        {(user.full_name || user.first_name || user.email || 'U').slice(0, 2).toUpperCase()}
+                                    </div>
                                     <div>
-                                        <p className="font-semibold">{user.name}</p>
+                                        <p className="font-semibold">{user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Unknown user'}</p>
                                         <p className="text-sm text-gray-500">{user.role}</p>
                                     </div>
+                                    <input
+                                        type="checkbox"
+                                        className="ml-auto"
+                                        checked={selectedUserIds.includes(user.id)}
+                                        readOnly
+                                    />
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        <p className="p-4 text-center text-gray-500">No users found</p>
+                        <p className="p-4 text-center text-gray-500">No users found for this search. Try email or username.</p>
                     )}
                 </div>
+                {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+                <button
+                    onClick={handleCreate}
+                    disabled={isCreating}
+                    className="mt-3 bg-indigo-600 text-white rounded-md py-2 hover:bg-indigo-700 disabled:opacity-60"
+                >
+                    {isCreating ? 'Creating...' : 'Create Group'}
+                </button>
             </div>
         </div>
     );
@@ -66,7 +167,7 @@ const NewConversationModal = ({ onClose, onStartConversation, allUsers, currentU
 const SharedMessagesPage = ({ conversations, setConversations, allMessages, setAllMessages, allUsers, currentUser }) => {
     const [activeConversationId, setActiveConversationId] = useState(null);
     const [newMessage, setNewMessage] = useState('');
-    const [isNewConvoModalOpen, setIsNewConvoModalOpen] = useState(false);
+    const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
     const [conversationSearch, setConversationSearch] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -169,20 +270,20 @@ const SharedMessagesPage = ({ conversations, setConversations, allMessages, setA
         }
     };
 
-    const startNewConversation = (user) => {
-        const nextId = conversations.length > 0 ? Math.max(...conversations.map((c) => c.id)) + 1 : 1;
+    const handleGroupCreated = (group) => {
         const newConversation = {
-            id: nextId,
-            name: user.name,
-            group: 'Direct Message',
-            avatar: user.initials,
-            lastMessage: 'Conversation started.',
+            id: group.id,
+            name: group.name,
+            group: group.description || 'Group',
+            avatar: (group.name || 'G').charAt(0).toUpperCase(),
+            lastMessage: group.last_message?.content || 'No messages yet',
             time: 'Just now'
         };
-        setConversations((prev) => [newConversation, ...prev]);
-        setAllMessages((prev) => ({ ...prev, [nextId]: [] }));
-        setActiveConversationId(nextId);
-        setIsNewConvoModalOpen(false);
+
+        setConversations((prev) => [newConversation, ...prev.filter((item) => item.id !== group.id)]);
+        setAllMessages((prev) => ({ ...prev, [group.id]: [] }));
+        setActiveConversationId(group.id);
+        setIsCreateGroupModalOpen(false);
     };
 
     const activeConversation = conversations.find((c) => c.id === activeConversationId);
@@ -197,8 +298,12 @@ const SharedMessagesPage = ({ conversations, setConversations, allMessages, setA
 
     return (
         <>
-            {isNewConvoModalOpen && (
-                <NewConversationModal onClose={() => setIsNewConvoModalOpen(false)} onStartConversation={startNewConversation} allUsers={allUsers} currentUser={currentUser} />
+            {isCreateGroupModalOpen && (
+                <CreateGroupModal
+                    onClose={() => setIsCreateGroupModalOpen(false)}
+                    onCreateGroup={handleGroupCreated}
+                    currentUser={currentUser}
+                />
             )}
 
             <div className="flex h-[calc(100vh-6rem)] min-h-[620px] bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
@@ -206,7 +311,7 @@ const SharedMessagesPage = ({ conversations, setConversations, allMessages, setA
                     <div className="p-5 border-b border-gray-200 flex-shrink-0 space-y-3">
                         <div className="flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-gray-900">Messages</h2>
-                            <button onClick={() => setIsNewConvoModalOpen(true)} className="bg-indigo-600 text-white rounded-full p-2 hover:bg-indigo-700">
+                            <button onClick={() => setIsCreateGroupModalOpen(true)} className="bg-indigo-600 text-white rounded-full p-2 hover:bg-indigo-700" title="Create group">
                                 <PlusIcon className="w-5 h-5" />
                             </button>
                         </div>
