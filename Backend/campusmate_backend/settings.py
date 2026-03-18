@@ -33,6 +33,11 @@ INSTALLED_APPS = [
     'chat',
     'notices',
     'marks.apps.MarksConfig',
+    'attendance.apps.AttendanceConfig',
+    'events.apps.EventsConfig',
+    'timetable.apps.TimetableConfig',
+    'availability.apps.AvailabilityConfig',
+    'tasks.apps.TasksConfig',
     
 ]
 

@@ -38,13 +38,17 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Create a new chat group."""
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
+        
+        # Determine if faculty is required (if creator is a student)
+        requires_faculty = request.user.role == 'student'
         
         group = ChatGroup.objects.create(
             name=serializer.validated_data['name'],
             description=serializer.validated_data.get('description', ''),
-            created_by=request.user
+            created_by=request.user,
+            requires_faculty=requires_faculty
         )
         
         # Add creator as admin member
@@ -53,6 +57,36 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
             user=request.user,
             is_admin=True
         )
+        
+        # Add additional members by ID if provided
+        member_ids = serializer.validated_data.get('member_ids', [])
+        if member_ids:
+            for user_id in member_ids:
+                if user_id != request.user.id:  # Don't add creator twice
+                    try:
+                        user = User.objects.get(id=user_id)
+                        GroupMembership.objects.get_or_create(
+                            group=group,
+                            user=user,
+                            defaults={'is_admin': user.role == 'faculty'}
+                        )
+                    except User.DoesNotExist:
+                        pass  # Skip if user doesn't exist
+        
+        # Add additional members by email if provided
+        member_emails = serializer.validated_data.get('member_emails', [])
+        if member_emails:
+            for email in member_emails:
+                if email.lower() != request.user.email.lower():  # Don't add creator twice
+                    try:
+                        user = User.objects.get(email=email)
+                        GroupMembership.objects.get_or_create(
+                            group=group,
+                            user=user,
+                            defaults={'is_admin': user.role == 'faculty'}
+                        )
+                    except User.DoesNotExist:
+                        pass  # Skip if user doesn't exist
         
         return Response(
             ChatGroupListSerializer(group).data,
@@ -183,3 +217,19 @@ class ChatGroupViewSet(viewsets.ModelViewSet):
                 {'error': 'Member not found in this group'},
                 status=status.HTTP_404_NOT_FOUND
             )
+    
+    @action(detail=True, methods=['get'])
+    def members(self, request, pk=None):
+        """Get all members of the chat group."""
+        group = self.get_object()
+        
+        # Verify user is member of group
+        if not group.memberships.filter(user=request.user).exists():
+            return Response(
+                {'error': 'You are not a member of this group'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        memberships = group.memberships.all()
+        serializer = GroupMembershipSerializer(memberships, many=True)
+        return Response(serializer.data)

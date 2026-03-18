@@ -14,6 +14,7 @@ import Dashboard from './components/Dashboard';
 import TeacherDashboard from './components/TeacherDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import StudyPlanPage from './components/StudyPlanPage';
+import RolePortal from './components/RolePortal';
 
 function App() {
   return (
@@ -29,6 +30,8 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={<RolePortal />} />
+
       {/* Student Routes */}
       <Route 
         path="/student/login" 
@@ -63,7 +66,7 @@ function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['student', 'admin']}>
             <Dashboard />
           </ProtectedRoute>
         }
@@ -72,27 +75,24 @@ function AppRoutes() {
       <Route
         path="/faculty/dashboard"
         element={
-          <ProtectedRoute redirectTo="/faculty/login">
+          <ProtectedRoute redirectTo="/faculty/login" allowedRoles={['faculty']}>
             <TeacherDashboard />
           </ProtectedRoute>
         }
       />
 
-      {/* Default redirect to the student login page */}
-      <Route path="*" element={<Navigate to="/student/login" />} />
-
           {/* Study Plan Route */}
           <Route
             path="/study-plan"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['student', 'admin']}>
                 <StudyPlanPage />
               </ProtectedRoute>
             }
           />
 
-          {/* Default redirect to the student login page */}
-          <Route path="*" element={<Navigate to="/student/login" />} />
+          {/* Default redirect to role portal */}
+          <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

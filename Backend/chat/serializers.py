@@ -77,7 +77,66 @@ class ChatMessageCreateSerializer(serializers.ModelSerializer):
         fields = ['content']
 
 
+class AddGroupMemberSerializer(serializers.Serializer):
+    """Serializer for adding a member to a group."""
+    user_id = serializers.IntegerField()
+    
+    def validate_user_id(self, value):
+        try:
+            User.objects.get(id=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User does not exist.")
+        return value
+
+
+class RemoveGroupMemberSerializer(serializers.Serializer):
+    """Serializer for removing a member from a group."""
+    user_id = serializers.IntegerField()
+
+
 class ChatGroupCreateSerializer(serializers.ModelSerializer):
+    member_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+        help_text="List of user IDs to add to the group."
+    )
+    member_emails = serializers.ListField(
+        child=serializers.EmailField(),
+        required=False,
+        allow_empty=True,
+        help_text="List of email addresses to invite to the group."
+    )
+    
     class Meta:
         model = ChatGroup
-        fields = ['name', 'description']
+        fields = ['name', 'description', 'member_ids', 'member_emails']
+    
+    def validate(self, data):
+        """Validate that students include at least one faculty member."""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user and hasattr(request.user, 'role'):
+            # Check if user is a student (has role attribute and it equals 'student')
+            if request.user.role == 'student':
+                member_ids = data.get('member_ids', [])
+                member_emails = data.get('member_emails', [])
+                
+                # Get faculty count from IDs and emails
+                faculty_from_ids = User.objects.filter(
+                    id__in=member_ids,
+                    role='faculty'
+                ).count()
+                
+                faculty_from_emails = User.objects.filter(
+                    email__in=member_emails,
+                    role='faculty'
+                ).count()
+                
+                total_faculty = faculty_from_ids + faculty_from_emails
+                
+                if total_faculty == 0 and (member_ids or member_emails):
+                    raise serializers.ValidationError(
+                        'Student groups must include at least one faculty member.'
+                    )
+        
+        return data

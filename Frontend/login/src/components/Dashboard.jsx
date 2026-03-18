@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient, { getProfile, getChatGroups, getGroupMessages, getNoDuesSubjects, getNoDuesApplications, applyNoDues, getMyMarks } from "./api";
 import SharedMessagesPage from './SharedMessagesPage';
+import AttendancePage from './AttendancePage';
 
 // --- Icon Components ---
 const HomeIcon = ({ className }) => (
@@ -1456,6 +1457,7 @@ const Dashboard = () => {
     const navItems = [
         { name: 'Dashboard', icon: HomeIcon },
         { name: 'Tasks', icon: ClipboardIcon }, 
+        { name: 'Attendance', icon: ClipboardIcon },
         { name: 'MST Marks', icon: ClipboardIcon },
         { name: 'Messages', icon: MessageSquareIcon },
         { name: 'Search', icon: SearchIcon },
@@ -1541,6 +1543,8 @@ const Dashboard = () => {
                         onClearCompletedStudentTasks={handleClearCompletedStudentTasks}
                     />
                 );
+            case 'Attendance':
+                return <AttendancePage />;
             case 'MST Marks':
                 return (
                     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">

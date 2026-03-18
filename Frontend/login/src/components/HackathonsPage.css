@@ -1,0 +1,369 @@
+.hackathons-page {
+  padding: 20px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  min-height: 100vh;
+}
+
+.hackathons-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 40px;
+}
+
+.hackathons-header h1 {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.hackathons-header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.hackathons-search-section {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.search-form {
+  display: flex;
+  gap: 10px;
+  max-width: 600px;
+  width: 100%;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 12px;
+  font-size: 1rem;
+  border-radius: 4px;
+}
+
+.search-button {
+  padding: 12px 30px;
+  background: #f5576c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.search-button:hover {
+  background: #e63f59;
+}
+
+.difficulty-filter {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.filter-btn {
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid transparent;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.filter-btn.active {
+  background: white;
+  color: #f5576c;
+}
+
+.hackathons-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid transparent;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.tab.active {
+  background: white;
+  color: #f5576c;
+}
+
+.hackathons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.hackathon-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.hackathon-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.hackathon-image {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: #e0e0e0;
+  overflow: hidden;
+}
+
+.hackathon-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.featured-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #fbbf24;
+  color: #78350f;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.hackathon-content {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.hackathon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hackathon-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.difficulty-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.hackathon-status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  width: fit-content;
+}
+
+.hackathon-description {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.hackathon-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.meta-icon {
+  font-size: 1.1rem;
+}
+
+.hackathon-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #f5576c;
+}
+
+.hackathon-prizes {
+  background: #fff9e6;
+  border-left: 4px solid #fbbf24;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.hackathon-prizes h4 {
+  margin: 0 0 10px 0;
+  color: #78350f;
+  font-size: 0.95rem;
+}
+
+.prize-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+.prize-place {
+  font-weight: 600;
+}
+
+.prize-amount {
+  font-weight: bold;
+}
+
+.hackathon-organizer {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 15px;
+  margin-top: auto;
+}
+
+.register-button {
+  padding: 12px;
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.register-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+}
+
+.hackathons-loading {
+  text-align: center;
+  color: white;
+  font-size: 1.2rem;
+  padding: 60px 20px;
+}
+
+.no-hackathons {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: white;
+  padding: 60px 20px;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .hackathons-header h1 {
+    font-size: 2rem;
+  }
+
+  .hackathons-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .difficulty-filter {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-btn {
+    width: 100%;
+  }
+
+  .hackathons-tabs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tab {
+    width: 100%;
+    text-align: center;
+  }
+}

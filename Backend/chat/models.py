@@ -12,6 +12,7 @@ class ChatGroup(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    requires_faculty = models.BooleanField(default=False)  # True if created by a student
     
     def __str__(self):
         return self.name

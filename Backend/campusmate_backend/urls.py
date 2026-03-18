@@ -12,4 +12,9 @@ urlpatterns = [
     path('api/notices/', include('notices.urls')), 
     path('api/chat/', include('chat.urls')),
     path('api/marks/', include('marks.urls')),
+    path('api/attendance/', include('attendance.urls')),
+    path('api/events/', include('events.urls')),
+    path('api/', include('timetable.urls')),
+    path('api/', include('availability.urls')),
+    path('api/', include('tasks.urls')),
 ]

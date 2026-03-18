@@ -7,10 +7,85 @@ const ChevronRightIcon = ({ className }) => ( <svg className={className} xmlns="
 const XIcon = ({ className }) => ( <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> );
 
 
-const EventModal = ({ selectedDate, newEvent, setNewEvent, handleSaveEvent, setIsEventModalOpen }) => (
-    // ... (Event Modal JSX remains the same) ...
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 animate-fade-in"><div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md"><div className="flex justify-between items-center mb-4 border-b pb-3"><h3 className="text-xl font-bold text-gray-800">Add Event for {selectedDate.toLocaleDateString()}</h3><button onClick={() => setIsEventModalOpen(false)} className="text-gray-400 hover:text-gray-600"><XIcon className="w-6 h-6" /></button></div><form onSubmit={handleSaveEvent}><div className="space-y-4"><div><label className="block text-sm font-medium text-gray-700">Title</label><input type="text" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"/></div><div><label className="block text-sm font-medium text-gray-700">Time</label><input type="time" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"/></div><div><label className="block text-sm font-medium text-gray-700">Details (Optional)</label><textarea value={newEvent.details} onChange={e => setNewEvent({...newEvent, details: e.target.value})} rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"></textarea></div><div><label className="block text-sm font-medium text-gray-700">Type</label><select value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"><option value="event">General Event</option><option value="important">Important Deadline</option><option value="hackathon">Hackathon/Competition</option></select></div></div><div className="mt-6 flex justify-end space-x-3"><button type="button" onClick={() => setIsEventModalOpen(false)} className="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button><button type="submit" className="bg-indigo-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">Save Event</button></div></form></div></div>
-);
+const EventModal = ({ selectedDate, newEvent, setNewEvent, handleSaveEvent, setIsEventModalOpen }) => {
+  const handleTitleChange = (e) => {
+    setNewEvent({...newEvent, title: e.target.value});
+  };
+  
+  const handleTimeChange = (e) => {
+    setNewEvent({...newEvent, time: e.target.value});
+  };
+  
+  const handleDetailsChange = (e) => {
+    setNewEvent({...newEvent, details: e.target.value});
+  };
+  
+  const handleTypeChange = (e) => {
+    setNewEvent({...newEvent, type: e.target.value});
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-4 border-b pb-3">
+          <h3 className="text-xl font-bold text-gray-800">Add Event for {selectedDate.toLocaleDateString()}</h3>
+          <button onClick={() => setIsEventModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+            <XIcon className="w-6 h-6" />
+          </button>
+        </div>
+        <form onSubmit={handleSaveEvent}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Title</label>
+              <input 
+                type="text" 
+                value={newEvent.title} 
+                onChange={handleTitleChange} 
+                required 
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Time</label>
+              <input 
+                type="time" 
+                value={newEvent.time} 
+                onChange={handleTimeChange} 
+                required 
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Details (Optional)</label>
+              <textarea 
+                value={newEvent.details} 
+                onChange={handleDetailsChange} 
+                rows="3" 
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <select 
+                value={newEvent.type} 
+                onChange={handleTypeChange} 
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="event">General Event</option>
+                <option value="important">Important Deadline</option>
+                <option value="hackathon">Hackathon/Competition</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end space-x-3">
+            <button type="button" onClick={() => setIsEventModalOpen(false)} className="bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+            <button type="submit" className="bg-indigo-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">Save Event</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const CalendarPage = ({ handleGenerateDaySummary, isGeneratingSummary }) => {
     console.log("Rendering: CalendarPage Component"); // Add log
